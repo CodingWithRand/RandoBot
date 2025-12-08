@@ -1,0 +1,23 @@
+{
+  "name": "randobot",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "discord.js": "^14.12.1",
+    "nanoid": "^5.1.5",
+    "node-fetch": "^3.3.2",
+    "zlib": "^1.0.5"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.3"
+  }
+}
