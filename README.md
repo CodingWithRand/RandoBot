@@ -20,6 +20,23 @@ __Parameters__
 2. `width`: specify width for the image (Default is 1024)
 3. `height`: specify height for the image (Default is 1024)
 
+### Music Player
+Play music with provided link or search from its title. You must join a voice chat first before running this command. The command is `/music`
+
+__Subcommands__
+1. `play`: play the music with given `query`. If playing, the music will be enqueued instead.
+2. `search`: search for the music from given `query`, and show top 5 of the search result for user to select and play the music through the button.
+3. `skip`: skip a track when the bot is playing music.
+4. `dropq`: delete a queue; all of the music that you've enqueued will be deleted.
+
+__Parameters__
+1. `query`: a link/a title associate to the music you want to play/search for.
+2. `service` (optional):
+    - `YouTube`: Use YouTube extractor, meaning all music data are from YouTube.
+    - `Spotify`: (Only work with link `query` and `search` subcommand) Use Spotify extractor to search for track with the given link, then search for the track with that Spotify extractor search result data.
+    - `Souncloud`: Use SoundCloud extractor.
+    
+
 ### Admin Special Commands
 Powerful commands that are only permitted to guild's owner, user with "Administrator" permission, and other permitted user. The command is `/admin`
 
@@ -36,3 +53,15 @@ __Current Version: 0.0.0__
 ### *v0.0.0* 
 - Publish the bot's source code to github
 - Features implemented as shown above in [Available features](#available-features) (80% documented)
+
+### *v0.0.1*
+- Perform bug test on `/admin`'s `view-commands` subcommand, and improve interface to page by page.
+- Perform bug test on `/chatbot` and `/image` and fix it
+- Add `grant` subcommand to `/admin`, so that admin can add someone else to the admin team.
+
+### *v.0.1.0*
+- Add `revoke` subcommand to `/admin`, so that admin can remove someone from the admin team.
+- Add `whois` subcommand to `/admin`, so that admin can check for people who are currently in the admin team.
+- Change the `/admin`'s subcommand system from filtering through options which can get messy, to proper subcommand system provided by discord.
+- Apply `view-commands` interface to `/help` command
+- `/music` command added (Pt.1)

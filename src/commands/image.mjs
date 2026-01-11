@@ -1,8 +1,11 @@
+import fs from "fs"
+
 async function genImage(prompt, width=1024, height=1024, model='flux') {
     const imageRequestUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${Math.random()}&model=${model}`;
     try {
         const response = await fetch(imageRequestUrl);
-        const buffer = await response.buffer();
+        // console.log(response, response.buffer);
+        const buffer = Buffer.from(await response.arrayBuffer());
     
         fs.writeFileSync('image.png', buffer);
         return null

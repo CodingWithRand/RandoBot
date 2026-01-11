@@ -1,7 +1,7 @@
 import getRoleMembers from "../rm.mjs"
+import fs from "fs"
 
-export default async function _addmin(interaction, amr, amu, gp) {
-    const gms = await interaction.guild.members.fetch()
+export default async function grant_admin(interaction, amr, amu, gp) {
     let errMessage;
     let ok = true;
     if(amr) {
@@ -12,25 +12,28 @@ export default async function _addmin(interaction, amr, amu, gp) {
                 ok = false;
                 break;
             }
-            gp.concat(uidInR);
+            gp.permitted.roles.push(r);
         } 
     }
     if(amu) {
         for(const u of amu) {
-            if(!gms.filter(gm => gm.user.username === u)){
+            const the_user = await interaction.guild.members.fetch({ query: u, limit: 1 });
+            if(the_user.size === 0){
                 errMessage = `User ${u} does not exist in this server.`
                 ok = false;
                 break;
             }
-            gp.push(u);
+            gp.permitted.users.push(the_user.first().user.id);
         }
     }
 
+    fs.writeFileSync(`./admin_perm/${interaction.guild.name}.json`, JSON.stringify(gp));
+
     const success = async (interaction) => {
-        interaction.followUp({ content: `Cleared ${deleted_amount} messages.`, ephemeral: true });
+        await interaction.followUp({ content: `Successfully granted admin permission.`, ephemeral: true });
     };
     const error = async (interaction) => {
-        interaction.followUp({ content: errMessage, ephemeral: true });
+        await interaction.followUp({ content: errMessage, ephemeral: true });
     };
 
     return { success, error, ok }

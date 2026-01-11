@@ -1,5 +1,10 @@
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { chatbotConfigs } = require('./commands/chatbot.mjs');
+const fs = require('fs');
+const { Player } = require('discord-player');
+const { DefaultExtractors } = require('@discord-player/extractor');
+const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
+const { SpotifyExtractor } = require('discord-player-spotify');
 const Commands = require('./commands/init.mjs').default;
 require('dotenv').config();
 
@@ -9,30 +14,79 @@ const client = new Client({
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildVoiceStates,
 	],
 });
 
 // Admin command initialization
 const initted = new Map();
-const granted_perm = {
+let granted_perm = {
     owner: null,
     admin: [],
-    permitted_users: []
-}
+    permitted: {
+        roles: [],
+        users: []
+    }
+};
 
-client.once('ready', () => {
+
+if(!fs.existsSync('./admin_perm')) fs.mkdirSync('./admin_perm');
+
+// Music player initialization
+
+const player = new Player(client)
+
+player.events.on('playerStart', (queue, track) => {
+    queue.metadata.channel.send(`Started playing **${track.cleanTitle}**!`);
+})
+
+player.events.on("queueDelete", (queue) => {
+    queue.metadata.channel.send("Queue finished");
+})
+
+player.events.on('playerError', (queue, error, track) => {
+    queue.metadata.channel.send(`Error playing **${track.cleanTitle}**: ${error.message}, skipping.`);
+    queue.node.skip();
+})
+
+client.once('ready', async () => {
     Commands.init();
     Commands.init(process.env.SERVER_ID); // for testing purpose, deleting it when deployed.
     console.log(`Logged in as ${client.user.tag}`);
+    
+    await player.extractors.loadMulti(DefaultExtractors);
+    await player.extractors.register(SpotifyExtractor)
+    await player.extractors.register(YoutubeSabrExtractor);
+
+    // for testing only - prod use one in guildCreate event
+    const guild = client.guilds.cache.get(process.env.SERVER_ID);
+    if(fs.existsSync(`./admin_perm/${guild.name}.json`))
+        granted_perm = JSON.parse(fs.readFileSync(`./admin_perm/${guild.name}.json`));
+    else {
+        const guild_members = await guild.members.fetch();
+        granted_perm.owner = guild.ownerId;
+        guild_members.forEach((gm) => {
+            if(gm.permissions.has(PermissionsBitField.Flags.Administrator)) granted_perm.admin.push(gm.id);
+        })
+    }
+
+    fs.writeFileSync(`./admin_perm/${guild.name}.json`, JSON.stringify(granted_perm));
 });
 
 client.on('guildCreate', async (guild) => {
+
+    if(fs.existsSync(`./admin_perm/${guild.name}.json`)) {
+        granted_perm = JSON.parse(fs.readFileSync(`./admin_perm/${guild.name}.json`));
+    }
+
     await Commands.init(guild.id);
     const guild_members = await guild.members.fetch();
     granted_perm.owner = guild.ownerId;
     guild_members.forEach((gm) => {
         if(gm.permissions.has(PermissionsBitField.Flags.Administrator)) granted_perm.admin.push(gm.id);
     })
+
+    fs.writeFileSync(`./admin_perm/${guild.name}.json`, JSON.stringify(granted_perm));
 })
   
 client.on('interactionCreate', async (interaction) => {
@@ -52,7 +106,7 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.followUp({ content: "The command is not available in this server as it may have been deleted." });
                 break;
             }
-            await interaction.followUp({ embeds: [await Commands.command_funcs.getRoleMembers(interaction.guild, "cmd-msg")], ephemeral: true });
+            await interaction.followUp({ embeds: [await Commands.command_funcs.getRoleMembers(interaction.guild, "cmd-rm")], ephemeral: true });
             break;
         case 'chatbot':
             if(Array.from(Commands.commands_list.get(interaction.guild.id), ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === "chatbot") === -1){
@@ -75,10 +129,17 @@ client.on('interactionCreate', async (interaction) => {
             break;
         case 'admin':
             await interaction.deferReply({ ephemeral: true });
-            await Commands.command_funcs.admin(client, interaction, initted, granted_perm);
+            await Commands.command_funcs.admin(interaction, initted, granted_perm);
             break;
-    }   
-    client.guilds.cache.get()
+        case 'music':
+            await interaction.deferReply({ timeout: 60000 });
+            if(Array.from(Commands.commands_list.get(interaction.guild.id), ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === "music") === -1){
+                await interaction.followUp({ content: "The command is not available in this server as it may have been deleted." });
+                break;
+            }
+            await Commands.command_funcs.music(interaction)
+            break;
+    }  
 });
 
 // Chatbot message detection and response event handler

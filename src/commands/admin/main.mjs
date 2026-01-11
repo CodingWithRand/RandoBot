@@ -1,4 +1,4 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from "discord.js";
 import Commands from "../../commands/init.mjs"
 import { getCommandInputDataType, getOptionChoices } from "../../util.mjs";
 
@@ -6,7 +6,8 @@ import { getCommandInputDataType, getOptionChoices } from "../../util.mjs";
 import getCommands from "./get-cmds.mjs";
 import delCommand from "./del-cmds.mjs";
 import clearMessages from "./clear-msg.mjs";
-import _addmin from "./addmin.mjs";
+import grant_admin from "./grant.mjs";
+import revoke_admin from "./revoke.mjs";
 
 // Boilerplate function
 async function execute(interaction, { permission, command }){
@@ -38,6 +39,7 @@ async function init(interaction, initiation){
             .setTitle("Administrator Commands")
             .setDescription("The following are the list of administrator commands you can use")
             .setColor("#00ff88")
+            
         Object.entries(data).forEach(([cmdName, cmdDetail]) => {
             adminCommandsEmbed.addFields({ name: cmdName, value: `${cmdDetail.description}
                     ${cmdDetail.parameters !== "No parameters" ? `**Parameters**\n${(() => {
@@ -52,7 +54,7 @@ async function init(interaction, initiation){
             ` })
         });
         await interaction.guild.members.fetch()
-        const userRoles = interaction.guild.members.cache.get(interaction.user.id).roles.cache.map(role => role.name);
+        const userRoles = await interaction.guild.members.cache.get(interaction.user.id).roles.cache.map(role => role.name);
         await interaction.followUp({ content: `Hello, ${interaction.user.username} (Role: ${userRoles.join(", ")}). It seems like you've just initialized the administrator console.\nHere are the available admin commands you can use`, embeds: [adminCommandsEmbed], ephemeral: true });
     };
     const error = async (interaction, data=undefined) => {
@@ -68,9 +70,11 @@ async function init(interaction, initiation){
 async function vc(defaultPermission, interaction) {
     let cmd_list, ok;
     const implemention = await adminCommands.viewCommands.body(interaction, (res, err) => {
+        // TODO: ~~Rewrite code to display options for each subcommand.~~ No need
         if(err){ console.error(err.message); return; };
-        cmd_list = {} 
-        res.command_list.forEach((cmd) => {
+        cmd_list = {}
+
+        function constructCmdList(cmd) {
             cmd_list[cmd.id] = {
                 name: cmd.name,
                 description: cmd.description,
@@ -87,7 +91,9 @@ async function vc(defaultPermission, interaction) {
                     return cmd_options
                 })(),
             }
-        });
+        }
+
+        res.command_list.forEach(constructCmdList);
         ok = res.status;
         execute(interaction, { permission: defaultPermission, command: {
             method: implemention,
@@ -100,42 +106,13 @@ async function vc(defaultPermission, interaction) {
 }
 
 // del-command
-async function dc(defaultPermission, client, interaction) {
+async function dc(defaultPermission, interaction) {
     let removingCommandIds = [];
-    client.on('interactionCreate', async (btnInteraction) => {
-        if(!btnInteraction.isButton()) return;
-        if(btnInteraction.customId === 'confirm_del_cmd') {
-            await btnInteraction.deferReply({ ephemeral: true });
-            try {
-                const { success, error, fetchingStatus, fetchResult } = await adminCommands.delCommand.body(interaction, removingCommandIds)
-                await execute(btnInteraction, { permission: defaultPermission, command: {
-                    method: { success, error },
-                    passingData: fetchResult,
-                    status: { ok: fetchingStatus },
-                    acceptSuccessData: true,
-                    acceptErrorData: true
-                }})
-            }catch (err) {
-                console.error(err)
-                await execute(btnInteraction, { permission: defaultPermission, command: {
-                    method: {
-                        success: async function (interaction) { await interaction.followUp({ content: "Incorrect command syntax", ephemeral: true })},
-                        error: async function (interaction) { await interaction.followUp({ content: "Something went wrong. Currently unable to delete the command", ephemeral: true }) } 
-                    },
-                    status: { ok: true },
-                    acceptSuccessData: false,
-                    acceptErrorData: false
-                }})
-            }    
-        } else if(btnInteraction.customId === 'cancel_del_cmd') {
-            await btnInteraction.reply({ content: "Deleting process has been cancelled", flags: MessageFlags.Ephemeral });
-        }
-    })
-    if(!interaction.options.getString("dc")){
+    if(!interaction.options.getString("commands")){
         await interaction.followUp({ content: "You need to provide command name or id to delete", ephemeral: true });
         return;
     }
-    const removingCommands = interaction.options.getString("dc")
+    const removingCommands = interaction.options.getString("commands");
     for(const cmd of removingCommands.split(" ")) {
         if (cmd === "admin" || cmd === "help") continue;
         if (!isNaN(parseInt(cmd))) removingCommandIds.push(cmd);
@@ -166,13 +143,44 @@ async function dc(defaultPermission, client, interaction) {
             removingCommandIds.forEach((cmdId) => showingCmdNameWithId.push(`${cmdId} - ${Commands.commands_list.get(interaction.guild.id).get(cmdId).name}`));
             return showingCmdNameWithId.join('\n');
         }
-    )()}\`\`\`would you like to proceed?`, components: [delConfirmation], ephemeral: true })
+    )()}\`\`\`would you like to proceed?`, components: [delConfirmation], ephemeral: true, fetchReply: true })
+
+    const btnInteraction = await (await interaction.fetchReply()).awaitMessageComponent({ 
+        componentType: ComponentType.Button, 
+        time: 60000
+    });
+    if(btnInteraction.customId === 'confirm_del_cmd') {
+        await btnInteraction.deferReply({ ephemeral: true });
+        try {
+            const { success, error, fetchingStatus, fetchResult } = await adminCommands.delCommand.body(interaction, removingCommandIds)
+            await execute(btnInteraction, { permission: defaultPermission, command: {
+                method: { success, error },
+                passingData: fetchResult,
+                status: { ok: fetchingStatus },
+                acceptSuccessData: true,
+                acceptErrorData: true
+            }})
+        }catch (err) {
+            console.error(err)
+            await execute(btnInteraction, { permission: defaultPermission, command: {
+                method: {
+                    success: async function (interaction) { await interaction.followUp({ content: "Incorrect command syntax", ephemeral: true })},
+                    error: async function (interaction) { await interaction.followUp({ content: "Something went wrong. Currently unable to delete the command", ephemeral: true }) } 
+                },
+                status: { ok: true },
+                acceptSuccessData: false,
+                acceptErrorData: false
+            }})
+        }    
+    } else if(btnInteraction.customId === 'cancel_del_cmd') {
+        await btnInteraction.reply({ content: "Deleting process has been cancelled", flags: MessageFlags.Ephemeral });
+    }
 }
 
 // cls
-async function cls(defaultPermission, client, interaction) {
-    const reqAmount = interaction.options.getInteger("number-of-messages");
-    const { success, error, ok, deleted_amount, all } = await adminCommands.clearMessage.body(client, interaction, reqAmount);
+async function cls(defaultPermission, interaction) {
+    const reqAmount = interaction.options.getInteger("number");
+    const { success, error, ok, deleted_amount, all } = await adminCommands.clearMessage.body(interaction, reqAmount);
     await execute(interaction, { permission: defaultPermission, command: {
         method: { success, error },
         status: { ok: ok },
@@ -182,14 +190,17 @@ async function cls(defaultPermission, client, interaction) {
     }})
 }
 
-// addmin
-async function addmin(defaultPermission, interaction, granted_perm) {
+// grant & revoke
+async function grant_or_revoke(defaultPermission, interaction, granted_perm, m) {
     let addminRoles = interaction.options.getString("roles");
     let addminUsers = interaction.options.getString("users");
     if(!addminRoles && !addminUsers) return await interaction.followUp({ content: "You need to provide at least one role or user to add to admin list", ephemeral: true });
     if(addminRoles) addminRoles = addminRoles.split(" ");
     if(addminUsers) addminUsers = addminUsers.split(" ");
-    const { success, error, ok } = await adminCommands.addmin.body(interaction, addminRoles, addminUsers, granted_perm);
+    let statenfunc;
+    if(m==="g") statenfunc = await adminCommands.grant.body(interaction, addminRoles, addminUsers, granted_perm);
+    else if(m==="r") statenfunc = await adminCommands.revoke.body(interaction, addminRoles, addminUsers, granted_perm);
+    const { success, error, ok } = statenfunc;
     await execute(interaction, { permission: defaultPermission, command: {
         method: { success, error },
         status: { ok: ok },
@@ -199,38 +210,15 @@ async function addmin(defaultPermission, interaction, granted_perm) {
 }
 
 // Main admin command handler
-async function admin(client, interaction, initted, granted_perm) {
+async function admin(interaction, initted, granted_perm) {
     const defaultPermission = (
-        granted_perm.owner = interaction.user.id || 
+        granted_perm.owner === interaction.user.id || 
         granted_perm.admin.includes(interaction.user.id) ||
-        granted_perm.permitted_users.includes(interaction.user.id)
-    ) ? true : false
-    
-    if(interaction.options.getString("command")){
-        if(!initted.get(interaction.user.id)) {
-            await interaction.followUp({ content: "You need to initialize the admin console first using `/admin` command", ephemeral: true });
-            return;
-        }
-        if(!defaultPermission) {
-            await interaction.followUp({ content: "You don't have permission to use admin commands!", ephemeral: true });
-            return;
-        }
-        // Switch other $ sign command to slash command
-        switch(interaction.options.getString("command")){
-            case "vc":
-                await vc(defaultPermission, interaction);
-                break;
-            case "dc":
-                await dc(defaultPermission, client, interaction);
-                break;
-            case "cls":
-                await cls(defaultPermission, client, interaction);
-                break;
-            case "addmin":
-                await addmin(defaultPermission, interaction, granted_perm);
-                break;
-        }
-    } else {
+        granted_perm.permitted.roles.includes(interaction.member.roles.cache.find((r) => r.name)) ||
+        granted_perm.permitted.users.includes(interaction.user.id)
+    )
+
+    if(interaction.options.getSubcommand() === "init") {
         await execute(interaction, { permission: defaultPermission,
             command: {
                 method: await adminCommands.init.body(interaction, initted),
@@ -246,6 +234,39 @@ async function admin(client, interaction, initted, granted_perm) {
                 acceptSuccessData: true,
                 acceptErrorData: true
         }})
+        return;
+    }
+
+    if(!initted.get(interaction.user.id)) {
+        await interaction.followUp({ content: "You need to initialize the admin commands first using `/admin init` command", ephemeral: true });
+        return;
+    }
+    if(!defaultPermission) {
+        await interaction.followUp({ content: "You don't have permission to use admin commands!", ephemeral: true });
+        return;
+    }
+    // Switch other $ sign command to slash command
+    switch(interaction.options.getSubcommand()){
+        case "view-commands":
+            await vc(defaultPermission, interaction);
+            break;
+        case "del-commands":
+            await dc(defaultPermission, interaction);
+            break;
+        case "cls":
+            await cls(defaultPermission, interaction);
+            break;
+        case "grant":
+            await grant_or_revoke(defaultPermission, interaction, granted_perm, "g");
+            break;
+        case "revoke":
+            await grant_or_revoke(defaultPermission, interaction, granted_perm, "r");
+            break;
+        case "whois":
+            await interaction.followUp({ embeds: [await Commands.command_funcs.getRoleMembers(interaction.guild, "cmd-admin-whois", granted_perm)], ephemeral: true });
+            break;
+        default:
+            await interaction.followUp({ content: "Invalid admin command.", ephemeral: true });
     }
 }
 
@@ -261,7 +282,7 @@ const adminCommands = {
         body: getCommands
     },
     delCommand: {
-        name: "del-command",
+        name: "del-commands",
         description: "Deleting command from the list",
         body: delCommand,
         parameters: {
@@ -284,10 +305,10 @@ const adminCommands = {
             }
         }
     },
-    addmin: {
-        name: "addmin",
+    grant: {
+        name: "grant",
         description: "Add a specific user or role to the admin list.",
-        body: _addmin,
+        body: grant_admin,
         parameters: {
             "role": {
                 type: "Texts",
@@ -300,6 +321,27 @@ const adminCommands = {
                 required: false
             }
         }
+    },
+    revoke: {
+        name: "revoke",
+        description: "Remove a specific user or role from the admin list.",
+        body: revoke_admin,
+        parameters: {
+            "role": {
+                type: "Texts",
+                description: "Role(s) to remove from the admin list, separated by space.",
+                required: false
+            },
+            "user": {
+                type: "Texts",
+                description: "Username(s) to remove from the admin list, separated by space.",
+                required: false
+            }
+        }
+    },
+    whois: {
+        name: "whois",
+        description: "Show the list of users and roles that have been granted admin permission.",
     }
 };
 

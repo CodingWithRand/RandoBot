@@ -1,3 +1,7 @@
-/chatbot_history
+# Dependencies
 /node_modules
 .env*
+
+# Bot created files
+/chatbot_history
+/admin_perm
