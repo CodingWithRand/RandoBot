@@ -13,7 +13,6 @@ const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
 const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
 const { SpotifyExtractor } = require('discord-player-spotify');
-const { verifyKey } = require('discord-interactions');
 const Commands = require('./commands/init.mjs').default;
 require('dotenv').config();
 

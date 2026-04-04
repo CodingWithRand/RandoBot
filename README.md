@@ -70,5 +70,5 @@ __Current Version: 0.0.0__
 - `/music` command added (Pt.1) with subcommands `play`, `search`, `skip`, and `dropq`
 
 ### *v.1.0.0*
-- Deploy the bot to [Render](https://render.com/) with (UptimeRobot)[https://uptimerobot.com/] as alarm clock (every 10 minutes)
+- Deploy the bot to [Render](https://render.com/) with [UptimeRobot](https://uptimerobot.com/) as alarm clock (every 10 minutes)
 - `/music` command added (Pt.2) with subcommands `controller`, `pause`, `resume`, `forward`, `backward` and renamed `dropq` to `stop` for clarity.
