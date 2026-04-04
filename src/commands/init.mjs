@@ -204,6 +204,11 @@ const command_names = {
                 .setName("dropq")
                 .setDescription("Delete the entire music queue and stop the music.")
         )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("controller")
+                .setDescription("Music player controller")
+        )
 };
 
 const command_funcs = {

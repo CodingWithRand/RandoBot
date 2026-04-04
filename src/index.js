@@ -1,3 +1,11 @@
+const http = require('http');
+
+// fake server
+http.createServer((req, res) => {
+  res.write('Bot is Online!');
+  res.end();
+}).listen(8080);
+
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { chatbotConfigs } = require('./commands/chatbot.mjs');
 const fs = require('fs');
@@ -5,6 +13,7 @@ const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
 const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
 const { SpotifyExtractor } = require('discord-player-spotify');
+const { verifyKey } = require('discord-interactions');
 const Commands = require('./commands/init.mjs').default;
 require('dotenv').config();
 

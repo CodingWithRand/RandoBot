@@ -1,10 +1,11 @@
-import { QueryType, useMainPlayer, useQueue } from "discord-player";
+import { QueryType, useHistory, useMainPlayer, useQueue } from "discord-player";
 import { YoutubeSabrExtractor } from "discord-player-googlevideo";
 import { SpotifyExtractor } from "discord-player-spotify";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from "discord.js";
 
 export default async function music(interaction) {
     const player = useMainPlayer();
+    const history = useHistory(interaction.guild);
     const queue = useQueue(interaction.guild);
     const query = interaction.options.getString("query");
     
@@ -97,15 +98,114 @@ export default async function music(interaction) {
                 queue.node.skip();
             }
             break;
-        case "dropq":
-            if(!queue) return await interaction.followUp("No queue to delete!");
+        case "stop":
+            if(!queue) return await interaction.followUp("No queue to stop!");
             else {
                 queue.delete();
-                await interaction.followUp("Successfully deleted the queue!");
+                await interaction.followUp("Successfully stopped playback.");
+            }
+            break;
+        case "pause":
+            if(!queue) return await interaction.followUp("Nothing to pause!");
+            else {
+                queue.node.pause();
+                await interaction.followUp("Paused playback.");
+            }
+            break;
+        case "resume":
+            if(!queue) return await interaction.followUp("Nothing to resume!");
+            else {
+                queue.node.pause();
+                await interaction.followUp("Resumed playback.");
             }
             break;
         case "controller":
+            if(!interaction.member.voice?.channel) return await interaction.followUp({ content: "Please join a voice channel first!", ephemeral: true });
+            if(!queue) return await interaction.followUp({ content: "Please play some music first!", ephemeral: true });
+            const ctrlBtns = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('track_back_most')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setLabel('|◀◀'),
+                new ButtonBuilder()
+                    .setCustomId('track_back_one')
+                    .setStyle(ButtonStyle.Primary)
+                    .setLabel('◀◀'),
+                new ButtonBuilder()
+                    .setCustomId('track_action')
+                    .setStyle(ButtonStyle.Danger)
+                    .setLabel('▶'),
+                new ButtonBuilder()
+                    .setCustomId('track_forward_one')
+                    .setStyle(ButtonStyle.Primary)
+                    .setLabel('▶▶'),
+                new ButtonBuilder()
+                    .setCustomId('track_forward_most')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setLabel('▶▶|')
+            )
+            let current_controller = await interaction.followUp({
+                content: `Now playing: **${queue.currentTrack.title}** by **${queue.currentTrack.author ?? "Unknown"}**\n${queue.node.createProgressBar()}`,
+                components: [ctrlBtns],
+                fetchReply: true
+            })
+
+            async function fucrBtnInteractionCollectorEvent(fucrBtnInteraction) {
+                await fucrBtnInteraction.deferReply();
+                if (!fucrBtnInteraction.customId.startsWith('track_')) return;
+                /* Behavior 
+                 *⏮️Go back one track
+                 *⏪Go back 10s
+                 *⏸️Pause/Play
+                 *⏩Go forward 10s
+                 *⏭️Go to next track
+                 * Note: It's so delay man :(
+                 */
+                // console.log(queue.node.getTimestamp().current., queue.node.getTrackPosition(), queue.node.get)
+                if(fucrBtnInteraction.customId === 'track_back_most') {
+                    try { await history.previous(); }
+                    catch(err) { return await fucrBtnInteraction.followUp("No more previous track!") }
+                } else if(fucrBtnInteraction.customId === 'track_back_one') {
+                    queue.node.seek(queue.node.getTimestamp().current.value - 10000);
+                } else if(fucrBtnInteraction.customId === 'track_action') {
+                    if(queue.node.isPlaying()) {
+                        ctrlBtns.components[2].setLabel('▶');
+                        queue.node.pause();
+                    }
+                    else {
+                        ctrlBtns.components[2].setLabel('||');
+                        queue.node.resume();
+                    }
+                } else if(fucrBtnInteraction.customId === 'track_forward_one') {
+                    queue.node.seek(queue.node.getTimestamp().current.value + 10000);
+                } else if(fucrBtnInteraction.customId === 'track_forward_most') {
+                    queue.node.skip();
+                }
+                
+                await current_controller.delete();
+                if(queue.currentTrack) current_controller = await fucrBtnInteraction.followUp({
+                    content: `Now playing: **${queue.currentTrack.title}** by **${queue.currentTrack.author ?? "Unknown"}**\n${queue.node.createProgressBar()}`,
+                    components: [ctrlBtns],
+                    fetchReply: true 
+                })
+                else await fucrBtnInteraction.followUp("No more track to play!");
+
+                const fucrBtnInteractionCollector = await (await fucrBtnInteraction.fetchReply()).createMessageComponentCollector({
+                    componentType: ComponentType.Button,
+                    time: 15*60000
+                })
+
+                fucrBtnInteractionCollector.on("collect", fucrBtnInteractionCollectorEvent)
+            }
+
+            const fucrBtnInteractionCollector = await (await interaction.fetchReply()).createMessageComponentCollector({
+                componentType: ComponentType.Button,
+                time: 15*60000
+            })
+
+            fucrBtnInteractionCollector.on("collect", fucrBtnInteractionCollectorEvent)
             // TODO: the << < ||/|> > >> music controller
+            break;
         case "play":
             if(!interaction.member.voice?.channel) return await interaction.followUp({ content: "Please join a voice channel first!", ephemeral: true });
 

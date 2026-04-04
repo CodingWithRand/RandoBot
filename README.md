@@ -27,7 +27,10 @@ __Subcommands__
 1. `play`: play the music with given `query`. If playing, the music will be enqueued instead.
 2. `search`: search for the music from given `query`, and show top 5 of the search result for user to select and play the music through the button.
 3. `skip`: skip a track when the bot is playing music.
-4. `dropq`: delete a queue; all of the music that you've enqueued will be deleted.
+4. `stop`: ~~delete a queue; all of the music that you've enqueued will be deleted.~~ stop the queue from playing.
+5. `controller`: bot sends playback control buttons in chat, you can go to previous track, go backward 10 seconds, pause/resume the track, go forward 10 seconds, or go to the next track, respectively. |◀◀ ◀◀ ▶ ▶▶ ▶▶|
+6. `pause`: pause a track when the bot is playing music.
+7. `resume`: resume a track when the bot is playing music.
 
 __Parameters__
 1. `query`: a link/a title associate to the music you want to play/search for.
@@ -64,4 +67,8 @@ __Current Version: 0.0.0__
 - Add `whois` subcommand to `/admin`, so that admin can check for people who are currently in the admin team.
 - Change the `/admin`'s subcommand system from filtering through options which can get messy, to proper subcommand system provided by discord.
 - Apply `view-commands` interface to `/help` command
-- `/music` command added (Pt.1)
+- `/music` command added (Pt.1) with subcommands `play`, `search`, `skip`, and `dropq`
+
+### *v.1.0.0*
+- Deploy the bot to [Render](https://render.com/) with (UptimeRobot)[https://uptimerobot.com/] as alarm clock (every 10 minutes)
+- `/music` command added (Pt.2) with subcommands `controller`, `pause`, `resume`, `forward`, `backward` and renamed `dropq` to `stop` for clarity.
