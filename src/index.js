@@ -124,7 +124,7 @@ client.on('interactionCreate', async (interaction) => {
             await Commands.command_funcs.chatbot(interaction);
             break;
         case 'image':
-            interaction.deferReply({ timeout: 60000 });
+            await interaction.deferReply({ timeout: 60000 });
             if(Array.from(Commands.commands_list.get(interaction.guild.id), ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === "image") === -1){
                 await interaction.followUp({ content: "The command is not available in this server as it may have been deleted." });
                 break;
