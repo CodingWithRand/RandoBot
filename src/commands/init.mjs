@@ -5,12 +5,13 @@ import { admin } from './admin/main.mjs';
 import getDate from './date.mjs';
 import getRoleMembers from './rm.mjs';
 import help from './help.mjs';
-import { chatbot, createHistoryFile, getChatbotTextResponse, preserveHistory } from './chatbot.mjs';
+import { chatbot, createHistory, getChatbotTextResponse, preserveHistory } from './chatbot.mjs';
 import image from './image.mjs';
 import music from './music.mjs';
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Optimize this soon ig.
 let commands_list = new Map();
 
 async function init(guildId=undefined){
@@ -223,7 +224,7 @@ const command_funcs = {
 
 const utility_functions = {
     getChatbotTextResponse,
-    createHistoryFile,
+    createHistory,
     preserveHistory
 }
 

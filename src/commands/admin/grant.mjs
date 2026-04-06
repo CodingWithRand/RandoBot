@@ -1,5 +1,7 @@
 import getRoleMembers from "../rm.mjs"
-import fs from "fs"
+import { AdminPermissions } from "../../schema.mjs"
+let im;
+import("../../index.js").then((mod) => im = mod);
 
 export default async function grant_admin(interaction, amr, amu, gp) {
     let errMessage;
@@ -26,8 +28,10 @@ export default async function grant_admin(interaction, amr, amu, gp) {
             gp.permitted.users.push(the_user.first().user.id);
         }
     }
-
-    fs.writeFileSync(`./admin_perm/${interaction.guild.name}.json`, JSON.stringify(gp));
+    
+    im.default.GrantedPerms.set(interaction.guild.id, gp);
+    await AdminPermissions.findOneAndUpdate({ gid: interaction.guild.id }, { perms: gp });
+    // fs.writeFileSync(`./admin_perm/${interaction.guild.name}.json`, JSON.stringify(gp));
 
     const success = async (interaction) => {
         await interaction.followUp({ content: `Successfully granted admin permission.`, ephemeral: true });

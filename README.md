@@ -1,7 +1,9 @@
 # RandoBot - A general purpose bot that suit my usages.
 ## Available features
 ### Chatbot
-A chatbot system adopted from [pollinations.ai](https://pollinations.ai/). Right now the chatbot model that the site use is GPT-5 nano model. You can create new a new text channel for your personal chatbot, which pertain chat history data as well. The command is `/chatbot`
+~~A chatbot system adopted from [pollinations.ai](https://pollinations.ai/). Right now the chatbot model that the site use is GPT-5 nano model.~~ 
+
+A generic chatbot system with Google's *Gemini 2.5 Flash Lite* model. You can create new a new text channel for your personal chatbot, which pertain chat history data as well. The command is `/chatbot`
 
 __Parameters__
 1. `action`: 
@@ -13,7 +15,9 @@ __Parameters__
 3. `chatname`: set the new text channel name for `private` scope only
 
 ### Image Creation
-Create a new image according to the prompt given by user. You can also set the image height and width too. The command is `/image`
+Create a new image according to the prompt given by user. The model used in generation is `flux` from [pollinations.ai](https://pollinations.ai/). You can also set the image height and width too. The command is `/image`
+
+Note: Right now, the limit rate is only 10 images/hour (All-user). I will try to make it 10 images/hour/user in the future. (Yes, that's the best I can do to make it free.)
 
 __Parameters__
 1. `prompt`: a prompt to create an image.
@@ -72,3 +76,7 @@ __Current Version: 0.0.0__
 ### *v.1.0.0*
 - Deploy the bot to [Render](https://render.com/) with [UptimeRobot](https://uptimerobot.com/) as alarm clock (every 10 minutes)
 - `/music` command added (Pt.2) with subcommands `controller`, `pause`, `resume`, `forward`, `backward` and renamed `dropq` to `stop` for clarity.
+
+### *v.1.0.1*
+- Migrate JSON file database for chatbot and permission management to [MongoDB](https://www.mongodb.com/)
+- Update `/chatbot` and `/image` commands from the changes of [pollinations.ai](https://pollinations.ai/). These changes has already been documented in the README file.

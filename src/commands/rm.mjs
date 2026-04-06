@@ -31,7 +31,7 @@ export default async function getRoleMembers(guild, method=undefined, reqrole=un
 
     if(method === "cmd-admin-whois"){
         rmMessage.addFields({ name: "Owner", value: `<@${reqrole.owner}>` })
-        rmMessage.addFields({ name: "Administrators", value: reqrole.admin.map(aid => `<@${aid}>`).join("\n") || "No admins found." })
+        rmMessage.addFields({ name: "Administrators", value: reqrole.admins.map(aid => `<@${aid}>`).join("\n") || "No admins found." })
         rmMessage.addFields({ name: "Permitted Users", value: reqrole.permitted.users.map(uid => `<@${uid}>`).join("\n") || "No permitted users found." })
     }
 

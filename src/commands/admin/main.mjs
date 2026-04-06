@@ -34,6 +34,7 @@ async function execute(interaction, { permission, command }){
 // Initialization
 async function init(interaction, initiation){
     initiation.set(interaction.user.id, true)
+    setTimeout(() => initiation.delete(interaction.user.id), 1000 * 60 * 30); // expire after 30 mins
     const success = async (interaction, data=undefined) => {
         const adminCommandsEmbed = new EmbedBuilder()
             .setTitle("Administrator Commands")
@@ -55,7 +56,7 @@ async function init(interaction, initiation){
         });
         await interaction.guild.members.fetch()
         const userRoles = await interaction.guild.members.cache.get(interaction.user.id).roles.cache.map(role => role.name);
-        await interaction.followUp({ content: `Hello, ${interaction.user.username} (Role: ${userRoles.join(", ")}). It seems like you've just initialized the administrator console.\nHere are the available admin commands you can use`, embeds: [adminCommandsEmbed], ephemeral: true });
+        await interaction.followUp({ content: `Hello, ${interaction.user.username} (Role: ${userRoles.join(", ")}). It seems like you've just initialized the administrator console.\nHere are the available admin commands you can use\n**Note: You'll be allow to use admin commands for 30 minutes per each initialization**`, embeds: [adminCommandsEmbed], ephemeral: true });
     };
     const error = async (interaction, data=undefined) => {
         await interaction.followUp({ content: `Couldn't initialize the console at the moment\`\`\`${JSON.stringify(data)}\`\`\``, ephemeral: true});
@@ -191,15 +192,15 @@ async function cls(defaultPermission, interaction) {
 }
 
 // grant & revoke
-async function grant_or_revoke(defaultPermission, interaction, granted_perm, m) {
+async function grant_or_revoke(defaultPermission, interaction, granted_perms, m) {
     let addminRoles = interaction.options.getString("roles");
     let addminUsers = interaction.options.getString("users");
     if(!addminRoles && !addminUsers) return await interaction.followUp({ content: "You need to provide at least one role or user to add to admin list", ephemeral: true });
     if(addminRoles) addminRoles = addminRoles.split(" ");
     if(addminUsers) addminUsers = addminUsers.split(" ");
     let statenfunc;
-    if(m==="g") statenfunc = await adminCommands.grant.body(interaction, addminRoles, addminUsers, granted_perm);
-    else if(m==="r") statenfunc = await adminCommands.revoke.body(interaction, addminRoles, addminUsers, granted_perm);
+    if(m==="g") statenfunc = await adminCommands.grant.body(interaction, addminRoles, addminUsers, granted_perms);
+    else if(m==="r") statenfunc = await adminCommands.revoke.body(interaction, addminRoles, addminUsers, granted_perms);
     const { success, error, ok } = statenfunc;
     await execute(interaction, { permission: defaultPermission, command: {
         method: { success, error },
@@ -210,12 +211,12 @@ async function grant_or_revoke(defaultPermission, interaction, granted_perm, m) 
 }
 
 // Main admin command handler
-async function admin(interaction, initted, granted_perm) {
+async function admin(interaction, initted, granted_perms) {
     const defaultPermission = (
-        granted_perm.owner === interaction.user.id || 
-        granted_perm.admin.includes(interaction.user.id) ||
-        granted_perm.permitted.roles.includes(interaction.member.roles.cache.find((r) => r.name)) ||
-        granted_perm.permitted.users.includes(interaction.user.id)
+        granted_perms.owner === interaction.user.id || 
+        granted_perms.admins.includes(interaction.user.id) ||
+        granted_perms.permitted.roles.includes(interaction.member.roles.cache.find((r) => r.name)) ||
+        granted_perms.permitted.users.includes(interaction.user.id)
     )
 
     if(interaction.options.getSubcommand() === "init") {
@@ -257,13 +258,13 @@ async function admin(interaction, initted, granted_perm) {
             await cls(defaultPermission, interaction);
             break;
         case "grant":
-            await grant_or_revoke(defaultPermission, interaction, granted_perm, "g");
+            await grant_or_revoke(defaultPermission, interaction, granted_perms, "g");
             break;
         case "revoke":
-            await grant_or_revoke(defaultPermission, interaction, granted_perm, "r");
+            await grant_or_revoke(defaultPermission, interaction, granted_perms, "r");
             break;
         case "whois":
-            await interaction.followUp({ embeds: [await Commands.command_funcs.getRoleMembers(interaction.guild, "cmd-admin-whois", granted_perm)], ephemeral: true });
+            await interaction.followUp({ embeds: [await Commands.command_funcs.getRoleMembers(interaction.guild, "cmd-admin-whois", granted_perms)], ephemeral: true });
             break;
         default:
             await interaction.followUp({ content: "Invalid admin command.", ephemeral: true });

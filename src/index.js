@@ -6,13 +6,15 @@ http.createServer((req, res) => {
   res.end();
 }).listen(8080);
 
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
-const { chatbotConfigs } = require('./commands/chatbot.mjs');
+const { Client, GatewayIntentBits, PermissionsBitField, GuildMember } = require('discord.js');
+const { getChatbotConfigs } = require('./commands/chatbot.mjs');
 const fs = require('fs');
 const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
 const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
 const { SpotifyExtractor } = require('discord-player-spotify');
+const { default: mongoose } = require('mongoose');
+const { AdminPermissions } = require('./schema.mjs');
 const Commands = require('./commands/init.mjs').default;
 require('dotenv').config();
 
@@ -26,19 +28,11 @@ const client = new Client({
 	],
 });
 
-// Admin command initialization
-const initted = new Map();
-let granted_perm = {
-    owner: null,
-    admin: [],
-    permitted: {
-        roles: [],
-        users: []
-    }
-};
+// Admin command initialization ~~(ONE SERVER, NEED CHANGE)~~ Changed!
+const initted = new Map(); // ok
+const granted_perms = new Map();
 
-
-if(!fs.existsSync('./admin_perm')) fs.mkdirSync('./admin_perm');
+// TODO: migrate to mongodb. Also look -> grant.mjs, rm.mjs [DONE]
 
 // Music player initialization
 
@@ -57,10 +51,47 @@ player.events.on('playerError', (queue, error, track) => {
     queue.node.skip();
 })
 
+async function adminPermInit(guild) {
+    const adminPerm = await AdminPermissions.findOne({ gid: guild.id });
+    let newAdminPerm = {
+        owner: null,
+        admins: [],
+        permitted: {
+            roles: [],
+            users: []
+        }
+    };
+
+    if(!adminPerm) {
+        newAdminPerm.owner = guild.ownerId;
+        const guild_members = await guild.members.fetch();
+        guild_members.forEach((gm) => {
+            if(gm.permissions.has(PermissionsBitField.Flags.Administrator)) newAdminPerm.admins.push(gm.id);
+        })
+        await AdminPermissions.create({ gid: guild.id, perms: newAdminPerm });
+        granted_perms.set(guild.id, newAdminPerm);
+    }
+    else if(adminPerm && !granted_perms.has(guild.id)) {
+        const guild_members = await guild.members.fetch();
+        guild_members.forEach((gm) => {
+            if(gm.permissions.has(PermissionsBitField.Flags.Administrator)) newAdminPerm.admins.push(gm.id);
+        })
+        newAdminPerm = {
+            ...newAdminPerm,
+            owner: adminPerm.perms.owner,
+            permitted: adminPerm.perms.permitted
+        }
+        await AdminPermissions.findOneAndUpdate({ gid: guild.id }, { perms: newAdminPerm });
+        granted_perms.set(guild.id, newAdminPerm);
+    }
+}
+
 client.once('ready', async () => {
     Commands.init();
     Commands.init(process.env.SERVER_ID); // for testing purpose, deleting it when deployed.
     console.log(`Logged in as ${client.user.tag}`);
+
+    await mongoose.connect(process.env.MONGODB_URI);
     
     await player.extractors.loadMulti(DefaultExtractors);
     await player.extractors.register(SpotifyExtractor)
@@ -68,33 +99,16 @@ client.once('ready', async () => {
 
     // for testing only - prod use one in guildCreate event
     const guild = client.guilds.cache.get(process.env.SERVER_ID);
-    if(fs.existsSync(`./admin_perm/${guild.name}.json`))
-        granted_perm = JSON.parse(fs.readFileSync(`./admin_perm/${guild.name}.json`));
-    else {
-        const guild_members = await guild.members.fetch();
-        granted_perm.owner = guild.ownerId;
-        guild_members.forEach((gm) => {
-            if(gm.permissions.has(PermissionsBitField.Flags.Administrator)) granted_perm.admin.push(gm.id);
-        })
-    }
-
-    fs.writeFileSync(`./admin_perm/${guild.name}.json`, JSON.stringify(granted_perm));
+    await adminPermInit(guild);
 });
 
 client.on('guildCreate', async (guild) => {
-
-    if(fs.existsSync(`./admin_perm/${guild.name}.json`)) {
-        granted_perm = JSON.parse(fs.readFileSync(`./admin_perm/${guild.name}.json`));
-    }
-
+    // const guild_members = await guild.members.fetch();
+    //     newAdminPerm.owner = guild.ownerId;
+    //     guild_members.forEach((gm) => {
+    //         console.log(gm.roles.cache);
+    await adminPermInit(guild);
     await Commands.init(guild.id);
-    const guild_members = await guild.members.fetch();
-    granted_perm.owner = guild.ownerId;
-    guild_members.forEach((gm) => {
-        if(gm.permissions.has(PermissionsBitField.Flags.Administrator)) granted_perm.admin.push(gm.id);
-    })
-
-    fs.writeFileSync(`./admin_perm/${guild.name}.json`, JSON.stringify(granted_perm));
 })
   
 client.on('interactionCreate', async (interaction) => {
@@ -137,7 +151,7 @@ client.on('interactionCreate', async (interaction) => {
             break;
         case 'admin':
             await interaction.deferReply({ ephemeral: true });
-            await Commands.command_funcs.admin(interaction, initted, granted_perm);
+            await Commands.command_funcs.admin(interaction, initted, granted_perms.get(interaction.guild.id));
             break;
         case 'music':
             await interaction.deferReply({ timeout: 60000 });
@@ -154,7 +168,7 @@ client.on('interactionCreate', async (interaction) => {
 client.on('messageCreate', async (message) => {
     if(message.author.bot) return;
 
-    const currentChannelConfig = chatbotConfigs[message.channel.id]
+    const currentChannelConfig = getChatbotConfigs(message.channel.id);
     if(!currentChannelConfig) return;
     if(!currentChannelConfig?.isActive) return;
     if(currentChannelConfig.isTyping) return;
@@ -166,9 +180,9 @@ client.on('messageCreate', async (message) => {
         if(!currentChannelConfig?.isActive) clearInterval(typingStatus);
     }, 9000);
 
-    const { ai_response, error } = await Commands.utility_functions.getChatbotTextResponse(message.content, currentChannelConfig.chatHistoryFile);
+    const { ai_response, aiiid, error } = await Commands.utility_functions.getChatbotTextResponse(message.content, message, currentChannelConfig.userCreated);
     if(ai_response){
-        Commands.utility_functions.preserveHistory({ role: "user", content: message.content }, currentChannelConfig.chatHistoryFile);
+        await Commands.utility_functions.preserveHistory(aiiid, message, currentChannelConfig.userCreated); // ditch pollinations.ai, adopt gemini-2.5-flash-lite
         const resChunks = [];
         let currentChunk = '';
         let charCount = 0;
@@ -194,9 +208,8 @@ client.on('messageCreate', async (message) => {
 
 client.login(process.env.BOT_TOKEN);
 
-// module.exports = {
-//     global: {
-//         initted, 
-//         granted_perm 
-//     }
-// }
+module.exports = {
+    GrantedPerms: {
+        set: (gid, perms) => granted_perms.set(gid, perms),
+    }
+}
