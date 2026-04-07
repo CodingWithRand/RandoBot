@@ -8,7 +8,7 @@ http.createServer((req, res) => {
 
 const { Client, GatewayIntentBits, PermissionsBitField, GuildMember } = require('discord.js');
 const { getChatbotConfigs } = require('./commands/chatbot.mjs');
-const fs = require('fs');
+// const fs = require('fs');
 const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
 const { YoutubeSabrExtractor } = require('discord-player-googlevideo');

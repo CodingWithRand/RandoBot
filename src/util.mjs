@@ -1,5 +1,4 @@
 import { ApplicationCommandOptionType, ComponentType, ActionRowBuilder, ButtonStyle, ButtonBuilder } from "discord.js";
-import mongoose from "mongoose";
 
 export function getOptionChoices(choices) {
     let choice_list = [];

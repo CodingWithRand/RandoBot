@@ -25,7 +25,7 @@ __Parameters__
 3. `height`: specify height for the image (Default is 1024)
 
 ### Music Player
-Play music with provided link or search from its title. You must join a voice chat first before running this command. The command is `/music`
+Play music with provided link or search from its title. You must join a voice chat first before running this command. 3 streaming services (YouTube, Spotify, SoundCloud) are provided for users to search the music, but only YouTube and Spotify are the extractors to play the music. User can choose streaming service when using the `play` or `search` subcommand. The command is `/music`
 
 __Subcommands__
 1. `play`: play the music with given `query`. If playing, the music will be enqueued instead.
@@ -35,6 +35,14 @@ __Subcommands__
 5. `controller`: bot sends playback control buttons in chat, you can go to previous track, go backward 10 seconds, pause/resume the track, go forward 10 seconds, or go to the next track, respectively. |◀◀ ◀◀ ▶ ▶▶ ▶▶|
 6. `pause`: pause a track when the bot is playing music.
 7. `resume`: resume a track when the bot is playing music.
+8. `save`: save the current playing queue as your playlist with given `name`.
+9. `delpl`: delete the playlist from your account.
+10. `list`: show all of your saved playlist
+11. `queue`: show the current playing track, and upcoming track in the queue.
+
+*May add*
+- `forward`: forward the track with the specify `duration` or 10 seconds as the default duration
+- `backward`: backward the track with the specify `duration` or 10 seconds as the default duration
 
 __Parameters__
 1. `query`: a link/a title associate to the music you want to play/search for.
@@ -42,6 +50,7 @@ __Parameters__
     - `YouTube`: Use YouTube extractor, meaning all music data are from YouTube.
     - `Spotify`: (Only work with link `query` and `search` subcommand) Use Spotify extractor to search for track with the given link, then search for the track with that Spotify extractor search result data.
     - `Souncloud`: Use SoundCloud extractor.
+3. `name` (for `save` and `delpl`): used to identify a playlist for the newly created one for `save` and the one to delete for `delpl`
     
 
 ### Admin Special Commands
@@ -75,8 +84,11 @@ __Current Version: 0.0.0__
 
 ### *v.1.0.0*
 - Deploy the bot to [Render](https://render.com/) with [UptimeRobot](https://uptimerobot.com/) as alarm clock (every 10 minutes)
-- `/music` command added (Pt.2) with subcommands `controller`, `pause`, `resume`, `forward`, `backward` and renamed `dropq` to `stop` for clarity.
+- `/music` command added (Pt.2) with subcommands `controller` and renamed `dropq` to `stop` for clarity.
 
 ### *v.1.0.1*
 - Migrate JSON file database for chatbot and permission management to [MongoDB](https://www.mongodb.com/)
 - Update `/chatbot` and `/image` commands from the changes of [pollinations.ai](https://pollinations.ai/). These changes has already been documented in the README file.
+
+### *v.1.1.0*
+- `/music` command added (Pt.3) with subcommands `pause`, `resume`, `save`, `delpl`, `list`, `queue`, with considering adding `forward` and `backward`

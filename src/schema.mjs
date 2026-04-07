@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 
 const ChatbotHistorySchema = new mongoose.Schema({
     chatName: { type: String, required: true },
@@ -39,3 +39,16 @@ export const AdminPermissions = mongoose.model(
         })
     })
 );
+
+export const MusicPlaylists = mongoose.model(
+    'music-playlist',
+    new mongoose.Schema({
+        uid: { type: String, required: true },
+        playlists: { 
+            type: Map, 
+            of: new mongoose.Schema({
+                tracks: { type: Map, of: String }
+            }) 
+        }
+    })
+)

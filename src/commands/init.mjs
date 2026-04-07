@@ -182,8 +182,13 @@ const command_names = {
                 .setDescription("Play music from the top result of the search.")
                 .addStringOption(option => 
                     option.setName("query")
-                        .setRequired(true)
+                        // .setRequired(true)
                         .setDescription("URL or keyword to search for music and play.")
+                )
+                .addStringOption(option => 
+                    option.setName("playlist")
+                        // .setRequired(true)
+                        .setDescription("Playlist name to play.")
                 )
                 .addStringOption(option => 
                     option.setName("service")
@@ -202,13 +207,53 @@ const command_names = {
         )
         .addSubcommand(subcommand => 
             subcommand
-                .setName("dropq")
+                .setName("stop")
                 .setDescription("Delete the entire music queue and stop the music.")
+        )
+        .addSubcommand(subcommand => 
+            subcommand
+                .setName("pause")
+                .setDescription("Pause the current music.")
+        )
+        .addSubcommand(subcommand => 
+            subcommand
+                .setName("resume")
+                .setDescription("Resume the paused music.")
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName("controller")
                 .setDescription("Music player controller")
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("save")
+                .setDescription("Save the current music queue as a playlist.")
+                .addStringOption(option => 
+                    option.setName("name")
+                        .setRequired(true)
+                        .setDescription("Name of the playlist to save.")
+                )
+        )
+        .addSubcommand(subcommand => 
+            subcommand
+                .setName("delpl")
+                .setDescription("Delete a saved playlist.")
+                .addStringOption(option => 
+                    option.setName("name")
+                        .setRequired(true)
+                        .setDescription("Name of the playlist to delete.")
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("list")
+                .setDescription("Show the list of your saved playlists.")
+        )
+        .addSubcommand(subcommand => 
+            subcommand
+                .setName("queue")
+                .setDescription("Show the current music queue.")
         )
 };
 
