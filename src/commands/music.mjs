@@ -1,8 +1,8 @@
 import { QueryType, useHistory, useMainPlayer, useQueue } from "discord-player";
-import { YoutubeSabrExtractor } from "discord-player-googlevideo";
 import { SpotifyExtractor } from "discord-player-spotify";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder } from "discord.js";
 import { MusicPlaylists } from "../schema.mjs";
+import { YoutubeExtractor } from "discord-player-youtubei";
 
 async function searchTracks(interaction, query, player) {
     let searchResult;
@@ -21,7 +21,7 @@ async function searchTracks(interaction, query, player) {
         searchResult = await player.search(query, {
             requestedBy: interaction.user,
             searchEngine:
-                interaction.options.getString("service") === "yt" ? `ext:${YoutubeSabrExtractor.identifier}` :
+                interaction.options.getString("service") === "yt" ? `ext:${YoutubeExtractor.identifier}` :
                 // interaction.options.getString("service") === "sp" ? `ext:${SpotifyExtractor.identifier}` : You don't need it.
                 interaction.options.getString("service") === "sc" ? QueryType.SOUNDCLOUD_SEARCH :
                     QueryType.AUTO_SEARCH
@@ -166,7 +166,7 @@ async function deployController(interaction, queue, history) {
 }
 
 
-async function playFromQuery(interaction, query, player, usingSearchEngine) {
+async function playFromQuery(interaction, query, player) {
     function isURL(q) {
         try {
             new URL(q);
@@ -185,10 +185,10 @@ async function playFromQuery(interaction, query, player, usingSearchEngine) {
         } else if(interaction.options.getString("service") !== "sp") { 
             const usingSearchEngine = 
                 // Non-URL query
-                interaction.options.getString("service") === "yt" && !isURL(query) ? `ext:${YoutubeSabrExtractor.identifier}` :
+                interaction.options.getString("service") === "yt" && !isURL(query) ? `ext:${YoutubeExtractor.identifier}` :
                 interaction.options.getString("service") === "sc" && !isURL(query) ? QueryType.SOUNDCLOUD_SEARCH :
                 // URL query
-                interaction.options.getString("service") === "yt" && isURL(query) ? `ext:${YoutubeSabrExtractor.identifier}` :
+                interaction.options.getString("service") === "yt" && isURL(query) ? `ext:${YoutubeExtractor.identifier}` :
                 interaction.options.getString("service") === "sc" && isURL(query) ? QueryType.SOUNDCLOUD_TRACK :
                 // Playlist Non-URL
                 // Playlist URL
@@ -209,7 +209,7 @@ async function playFromQuery(interaction, query, player, usingSearchEngine) {
     }
 }
 
-async function playFromPlaylist(interaction, player, usingSearchEngine) {
+async function playFromPlaylist(interaction, player) {
     const userPlaylists = await MusicPlaylists.findOne({ uid: interaction.user.id });
     if(!userPlaylists) return await interaction.followUp({ content: "You don't have any saved playlists!", ephemeral: true });
     const playlistToPlay = userPlaylists.playlists.get(interaction.options.getString("playlist"));

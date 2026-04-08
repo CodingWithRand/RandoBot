@@ -11,7 +11,7 @@ const { getChatbotConfigs } = require('./commands/chatbot.mjs');
 // const fs = require('fs');
 const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
-const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
+const { YoutubeExtractor } = require('discord-player-youtubei');
 const { SpotifyExtractor } = require('discord-player-spotify');
 const { default: mongoose } = require('mongoose');
 const { AdminPermissions } = require('./schema.mjs');
@@ -95,8 +95,12 @@ client.once('ready', async () => {
     
     await player.extractors.loadMulti(DefaultExtractors);
     await player.extractors.register(SpotifyExtractor)
-    await player.extractors.register(YoutubeSabrExtractor, {
-        authentication: process.env.YT_COOKIES ? JSON.parse(process.env.YT_COOKIES) : null,
+    await player.extractors.register(YoutubeExtractor, {
+        cookie: process.env.YT_COOKIES,
+        generateWithPoToken: true,
+        streamOptions: {
+            useClient: "WEB"
+        }
     });
 
     // for testing only - prod use one in guildCreate event
