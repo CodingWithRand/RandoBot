@@ -6,7 +6,7 @@ http.createServer((req, res) => {
   res.end();
 }).listen(8080);
 
-const { Client, GatewayIntentBits, PermissionsBitField, GuildMember } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { getChatbotConfigs } = require('./commands/chatbot.mjs');
 // const fs = require('fs');
 const { Player } = require('discord-player');
@@ -95,7 +95,9 @@ client.once('ready', async () => {
     
     await player.extractors.loadMulti(DefaultExtractors);
     await player.extractors.register(SpotifyExtractor)
-    await player.extractors.register(YoutubeSabrExtractor);
+    await player.extractors.register(YoutubeSabrExtractor, {
+        authentication: process.env.YT_COOKIES ? JSON.parse(process.env.YT_COOKIES) : null,
+    });
 
     // for testing only - prod use one in guildCreate event
     const guild = client.guilds.cache.get(process.env.SERVER_ID);
