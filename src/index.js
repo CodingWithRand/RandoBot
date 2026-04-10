@@ -6,6 +6,12 @@ http.createServer((req, res) => {
   res.end();
 }).listen(8080);
 
+const { ProxyAgent, setGlobalDispatcher, fetch } = require('undici');
+
+const proxyAgent =  new ProxyAgent("http://0.tcp.ap.ngrok.io:19665")
+
+setGlobalDispatcher(proxyAgent);
+
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { getChatbotConfigs } = require('./commands/chatbot.mjs');
 // const fs = require('fs');
@@ -95,8 +101,22 @@ client.once('ready', async () => {
     
     await player.extractors.loadMulti(DefaultExtractors);
     await player.extractors.register(SpotifyExtractor)
+
+    // I have tried every way. Researched everything. There is no way to avoid IP block from YouTube and SoundCloud, so I may have to use proxy server, with my own pc.
+    // TODO: implement proxy and add it here.
+    // Tried: cloudflared ❌, localtunnel ❌, ngrok ❌😔, serveo ❌
+    // Upcoming: playit.gg (tcp)
+
+    // Takeaway:
+    // - passing headers in ProxyAgent mean passing it to the destination server, not to the proxy server.
+    // - the solution with igops/ngrok-skip-browser-warning:latest repo only work with normal fetch method (CRUD). WHICH the proxy agent do CONNECT tunneling.
+    // - TCP MIGHT be the way. By opening raw tunnel connection between your local to the destination server with the proxy is just the tunnel.
+
+    // Upcoming: serveo
+
     await player.extractors.register(YoutubeExtractor, {
         cookie: process.env.YT_COOKIES,
+        proxy: proxyAgent,
         generateWithPoToken: true,
         streamOptions: {
             useClient: "WEB"
