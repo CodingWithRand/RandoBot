@@ -19,7 +19,7 @@ server.on('error', (err) => {
     console.error('Proxy Server Error:', err.message);
 });
 
-const PORT = 5050;
+const PORT = 25565;
 server.listen(PORT, '127.0.0.1', () => {
     console.log(`\x1b[32m✔\x1b[0m Proxy is live on port ${PORT}`);
     console.log(`\x1b[33mℹ\x1b[0m Point your Discord Bot to your Ngrok URL.`);

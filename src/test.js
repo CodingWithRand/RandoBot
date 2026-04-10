@@ -6,14 +6,7 @@ headers.set('serveo-skip-browser-warning', 'true');
 
 // // console.log(headers)
 
-const proxyAgent =  new ProxyAgent({
-    uri: "http://0.tcp.ap.ngrok.io:19665",
-    proxyTunnel: true,
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) curl/8.0.1',
-      'serveo-skip-browser-warning': 'true'
-    }
-});
+const proxyAgent = new ProxyAgent("http://147.185.221.20:25565");
 
 // proxyAgent.compose((dispatch) => {
 //   return (opts, handler) => {
@@ -31,7 +24,7 @@ const proxyAgent =  new ProxyAgent({
 
 (async () => {
     try {
-        const res = await request('https://google.com', { dispatcher: proxyAgent });
+        const res = await request('http://google.com', { dispatcher: proxyAgent });
         console.log("--- PROXY TEST ---");
         console.log("Status:", res.status); // Should be 200
         console.log("Headers:", res.headers);

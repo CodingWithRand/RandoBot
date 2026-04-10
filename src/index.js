@@ -8,7 +8,7 @@ http.createServer((req, res) => {
 
 const { ProxyAgent, setGlobalDispatcher, fetch } = require('undici');
 
-const proxyAgent =  new ProxyAgent("http://0.tcp.ap.ngrok.io:19665")
+const proxyAgent =  new ProxyAgent("http://having-relevant.gl.joinmc.link")
 
 setGlobalDispatcher(proxyAgent);
 
