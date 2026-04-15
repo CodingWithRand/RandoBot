@@ -1,8 +1,9 @@
 const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
-const { YoutubeExtractor } = require('discord-player-youtubei');
+// const { YoutubeExtractor } = require('discord-player-youtubei');
+const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
 const { SpotifyExtractor } = require('discord-player-spotify');
-const { GatewayIntentBits, Client, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { GatewayIntentBits, Client, SlashCommandBuilder, EmbedBuilder, ActivityType } = require('discord.js');
 const { CommandList } = require('./util.mjs');
 const mongoose = require('mongoose');
 const { default: music } = require('./commands/music.mjs');
@@ -38,9 +39,19 @@ player.events.on('playerError', (queue, error, track) => {
 client.once('ready', async () => {
     await player.extractors.loadMulti(DefaultExtractors);
     await player.extractors.register(SpotifyExtractor);
-    await player.extractors.register(YoutubeExtractor);
+    // await player.extractors.register(YoutubeExtractor, {
+    //     cookie: process.env.YT_COOKIES,
+    //     generateWithPoToken: true,
+    //     streamOptions: {
+    //         useClient: "WEB"
+    //     }
+    // });
+    await player.extractors.register(YoutubeSabrExtractor);
 
-    const command_names = { 
+    const command_names = {
+        help: new SlashCommandBuilder()
+            .setName("help")
+            .setDescription("Show all available commands and their usage details."),
         query: new SlashCommandBuilder()
             .setName("search")
                 .setDescription("Search top 5 music results for you to review and choose to play manually.")
@@ -138,18 +149,28 @@ client.once('ready', async () => {
     console.log(`Logged in as ${client.user.tag}`);
     
     await mongoose.connect(process.env.MONGODB_URI);
+
+    client.user.setPresence({
+        activities: [{
+            name: "Music 🎵🎶🎧 & Podcast 🎙️📻",
+            type: ActivityType.Streaming,
+            url: "https://www.youtube.com"
+        }],
+        status: "online"
+    })
 })
 
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
     switch (interaction.commandName) {
         case 'help':
+            await interaction.deferReply({ ephemeral: true });
             const cmdListForUser = new EmbedBuilder()
                 .setColor("#ffffff")
                 .setTitle("Commands Help Center")
                 .setDescription("You can see the list of commands and how to use it here");
         
-            const disco_api_url = `https://discord.com/api/v10/applications/${process.env.LISTENWDAISEY_BOT_ID}/guilds/${interaction.guild.id}/commands`;
+            const disco_api_url = `https://discord.com/api/v10/applications/${process.env.LISTENWDAISEY_BOT_ID}/commands`;
             const options = {
                 method: 'GET',
                 headers: {
@@ -182,6 +203,7 @@ client.on('interactionCreate', async (interaction) => {
             });
         
             await CommandEmbedListForUser.registerControlBtn("user", interaction);
+            break;
         default:
             await interaction.deferReply({ timeout: 60000 });
             await music(interaction)

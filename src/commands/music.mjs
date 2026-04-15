@@ -2,7 +2,8 @@ import { QueryType, useHistory, useMainPlayer, useQueue } from "discord-player";
 import { SpotifyExtractor } from "discord-player-spotify";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder } from "discord.js";
 import { MusicPlaylists } from "../schema.mjs";
-import { YoutubeExtractor } from "discord-player-youtubei";
+// import { YoutubeExtractor } from "discord-player-youtubei";
+import { YoutubeSabrExtractor } from "discord-player-googlevideo";
 
 async function searchTracks(interaction, query, player) {
     let searchResult;
@@ -21,7 +22,7 @@ async function searchTracks(interaction, query, player) {
         searchResult = await player.search(query, {
             requestedBy: interaction.user,
             searchEngine:
-                interaction.options.getString("service") === "yt" ? `ext:${YoutubeExtractor.identifier}` :
+                interaction.options.getString("service") === "yt" ? `ext:${YoutubeSabrExtractor.identifier}` :
                 // interaction.options.getString("service") === "sp" ? `ext:${SpotifyExtractor.identifier}` : You don't need it.
                 interaction.options.getString("service") === "sc" ? QueryType.SOUNDCLOUD_SEARCH :
                     QueryType.AUTO_SEARCH
@@ -185,10 +186,10 @@ async function playFromQuery(interaction, query, player) {
         } else if(interaction.options.getString("service") !== "sp") { 
             const usingSearchEngine = 
                 // Non-URL query
-                interaction.options.getString("service") === "yt" && !isURL(query) ? `ext:${YoutubeExtractor.identifier}` :
+                interaction.options.getString("service") === "yt" && !isURL(query) ? `ext:${YoutubeSabrExtractor.identifier}` :
                 interaction.options.getString("service") === "sc" && !isURL(query) ? QueryType.SOUNDCLOUD_SEARCH :
                 // URL query
-                interaction.options.getString("service") === "yt" && isURL(query) ? `ext:${YoutubeExtractor.identifier}` :
+                interaction.options.getString("service") === "yt" && isURL(query) ? `ext:${YoutubeSabrExtractor.identifier}` :
                 interaction.options.getString("service") === "sc" && isURL(query) ? QueryType.SOUNDCLOUD_TRACK :
                 // Playlist Non-URL
                 // Playlist URL

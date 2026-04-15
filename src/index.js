@@ -72,7 +72,7 @@ async function adminPermInit(guild) {
 
 client.once('ready', async () => {
     Commands.init();
-    // Commands.init(process.env.SERVER_ID); // for testing purpose, deleting it when deployed.
+    Commands.init(process.env.SERVER_ID); // for testing purpose, deleting it when deployed.
     console.log(`Logged in as ${client.user.tag}`);
 
     await mongoose.connect(process.env.MONGODB_URI);
@@ -106,8 +106,8 @@ client.once('ready', async () => {
     // });
 
     // for testing only - prod use one in guildCreate event
-    // const guild = client.guilds.cache.get(process.env.SERVER_ID);
-    // await adminPermInit(guild);
+    const guild = client.guilds.cache.get(process.env.SERVER_ID);
+    await adminPermInit(guild);
 });
 
 client.on('guildCreate', async (guild) => {
