@@ -4,9 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node ./src/test.js",
     "start": "node ./src/index.js",
-    "proxy": "node ./src/proxy.js"
+    "music": "node ./src/local-index.js"
   },
   "keywords": [],
   "author": "",

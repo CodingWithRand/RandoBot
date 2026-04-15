@@ -5,11 +5,11 @@ import { CommandList } from "../../util.mjs";
 dotenv.config();
 
 export default async function getCommands(interaction, callback) {
-    const disco_api_url = `https://discord.com/api/v10/applications/${process.env.BOT_ID}/guilds/${interaction.guild.id}/commands`;
+    const disco_api_url = `https://discord.com/api/v10/applications/${process.env.DAISEY_BOT_ID}/guilds/${interaction.guild.id}/commands`;
     const options = {
         method: 'GET',
         headers: {
-            'Authorization': `Bot ${process.env.BOT_TOKEN}`,
+            'Authorization': `Bot ${process.env.DAISEY_BOT_TOKEN}`,
             'Content-Type': 'application/json'
         },
     };

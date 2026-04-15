@@ -299,7 +299,7 @@ export default async function music(interaction) {
     const queue = useQueue(interaction.guild);
     const query = interaction.options.getString("query");
 
-    switch(interaction.options.getSubcommand()){
+    switch(interaction.commandName){
         case "search":
             await searchTracks(interaction, query, player);
             break;
@@ -355,6 +355,4 @@ export default async function music(interaction) {
             break;
             // TODO: Show saved playlist in the db
     }
-
-
 }

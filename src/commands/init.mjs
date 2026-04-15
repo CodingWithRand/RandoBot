@@ -15,11 +15,11 @@ dotenv.config();
 let commands_list = new Map();
 
 async function init(guildId=undefined){
-    const disco_api_url = `https://discord.com/api/v10/applications/${process.env.BOT_ID}/${guildId ? `guilds/${guildId}/` : ''}commands`;
+    const disco_api_url = `https://discord.com/api/v10/applications/${process.env.DAISEY_BOT_ID}/${guildId ? `guilds/${guildId}/` : ''}commands`;
     const adding_commands = await fetch(disco_api_url, {
         method: 'PUT',
         headers: {
-            'Authorization': `Bot ${process.env.BOT_TOKEN}`,
+            'Authorization': `Bot ${process.env.DAISEY_BOT_TOKEN}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(Object.values(command_names).map(command => command.toJSON()))
@@ -154,107 +154,6 @@ const command_names = {
                 .setName("whois")
                 .setDescription("Show the list of users and roles that have been granted admin permission.")
         ),
-    music: new SlashCommandBuilder()
-        .setName("music")
-        .setDescription("Search or Play music to your liking from various streaming services in the voice channel you're in.")
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("search")
-                .setDescription("Search top 5 music results for you to review and choose to play manually.")
-                .addStringOption(option => 
-                    option.setName("query")
-                        .setRequired(true)
-                        .setDescription("URL or keyword to search for music")
-                )
-                .addStringOption(option => 
-                    option.setName("service")
-                        .setDescription("Streaming service to play music from. (Optional)")
-                        .addChoices(
-                            { name: "YouTube", value: "yt" },
-                            { name: "Spotify", value: "sp" },
-                            { name: "SoundCloud", value: "sc" },
-                        )
-                )
-        )
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("play")
-                .setDescription("Play music from the top result of the search.")
-                .addStringOption(option => 
-                    option.setName("query")
-                        // .setRequired(true)
-                        .setDescription("URL or keyword to search for music and play.")
-                )
-                .addStringOption(option => 
-                    option.setName("playlist")
-                        // .setRequired(true)
-                        .setDescription("Playlist name to play.")
-                )
-                .addStringOption(option => 
-                    option.setName("service")
-                        .setDescription("Streaming service to play music from. (Optional)")
-                        .addChoices(
-                            { name: "YouTube", value: "yt" },
-                            { name: "Spotify", value: "sp" },
-                            { name: "SoundCloud", value: "sc" },
-                        )
-                )
-        )
-        .addSubcommand(subcommand => 
-            subcommand
-                .setName("skip")
-                .setDescription("Skip the current music.")
-        )
-        .addSubcommand(subcommand => 
-            subcommand
-                .setName("stop")
-                .setDescription("Delete the entire music queue and stop the music.")
-        )
-        .addSubcommand(subcommand => 
-            subcommand
-                .setName("pause")
-                .setDescription("Pause the current music.")
-        )
-        .addSubcommand(subcommand => 
-            subcommand
-                .setName("resume")
-                .setDescription("Resume the paused music.")
-        )
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("controller")
-                .setDescription("Music player controller")
-        )
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("save")
-                .setDescription("Save the current music queue as a playlist.")
-                .addStringOption(option => 
-                    option.setName("name")
-                        .setRequired(true)
-                        .setDescription("Name of the playlist to save.")
-                )
-        )
-        .addSubcommand(subcommand => 
-            subcommand
-                .setName("delpl")
-                .setDescription("Delete a saved playlist.")
-                .addStringOption(option => 
-                    option.setName("name")
-                        .setRequired(true)
-                        .setDescription("Name of the playlist to delete.")
-                )
-        )
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("list")
-                .setDescription("Show the list of your saved playlists.")
-        )
-        .addSubcommand(subcommand => 
-            subcommand
-                .setName("queue")
-                .setDescription("Show the current music queue.")
-        )
 };
 
 const command_funcs = {

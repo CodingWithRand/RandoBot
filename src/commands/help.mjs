@@ -9,11 +9,11 @@ export default async function help(interaction) {
         .setTitle("Commands Help Center")
         .setDescription("You can see the list of commands and how to use it here");
 
-    const disco_api_url = `https://discord.com/api/v10/applications/${process.env.BOT_ID}/guilds/${interaction.guild.id}/commands`;
+    const disco_api_url = `https://discord.com/api/v10/applications/${process.env.DAISEY_BOT_ID}/guilds/${interaction.guild.id}/commands`;
     const options = {
         method: 'GET',
         headers: {
-            'Authorization': `Bot ${process.env.BOT_TOKEN}`,
+            'Authorization': `Bot ${process.env.DAISEY_BOT_TOKEN}`,
             'Content-Type': 'application/json'
         },
     };

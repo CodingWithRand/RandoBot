@@ -7,11 +7,11 @@ export default async function delCommand(interaction, cmdId){
     let fetchResult;
 
     for(const id of cmdId){
-        const disco_api_url = `https://discord.com/api/v10/applications/${process.env.BOT_ID}/guilds/${interaction.guild.id}/commands/${id}`;
+        const disco_api_url = `https://discord.com/api/v10/applications/${process.env.DAISEY_BOT_ID}/guilds/${interaction.guild.id}/commands/${id}`;
         const del_commands = await fetch(disco_api_url, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bot ${process.env.BOT_TOKEN}`,
+                'Authorization': `Bot ${process.env.DAISEY_BOT_TOKEN}`,
                 'Content-Type': 'application/json'
             },
         })

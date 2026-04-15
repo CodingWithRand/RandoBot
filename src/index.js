@@ -6,19 +6,14 @@ http.createServer((req, res) => {
   res.end();
 }).listen(8080);
 
-const { ProxyAgent, setGlobalDispatcher, fetch } = require('undici');
+// const { ProxyAgent, setGlobalDispatcher, fetch } = require('undici');
 
-const proxyAgent =  new ProxyAgent("http://having-relevant.gl.joinmc.link")
+// const proxyAgent =  new ProxyAgent("http://having-relevant.gl.joinmc.link")
 
-setGlobalDispatcher(proxyAgent);
+// setGlobalDispatcher(proxyAgent);
 
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { getChatbotConfigs } = require('./commands/chatbot.mjs');
-// const fs = require('fs');
-const { Player } = require('discord-player');
-const { DefaultExtractors } = require('@discord-player/extractor');
-const { YoutubeExtractor } = require('discord-player-youtubei');
-const { SpotifyExtractor } = require('discord-player-spotify');
 const { default: mongoose } = require('mongoose');
 const { AdminPermissions } = require('./schema.mjs');
 const Commands = require('./commands/init.mjs').default;
@@ -39,23 +34,6 @@ const initted = new Map(); // ok
 const granted_perms = new Map();
 
 // TODO: migrate to mongodb. Also look -> grant.mjs, rm.mjs [DONE]
-
-// Music player initialization
-
-const player = new Player(client)
-
-player.events.on('playerStart', (queue, track) => {
-    queue.metadata.channel.send(`Started playing **${track.cleanTitle}**!`);
-})
-
-player.events.on("queueDelete", (queue) => {
-    queue.metadata.channel.send("Queue finished");
-})
-
-player.events.on('playerError', (queue, error, track) => {
-    queue.metadata.channel.send(`Error playing **${track.cleanTitle}**: ${error.message}, skipping.`);
-    queue.node.skip();
-})
 
 async function adminPermInit(guild) {
     const adminPerm = await AdminPermissions.findOne({ gid: guild.id });
@@ -94,38 +72,42 @@ async function adminPermInit(guild) {
 
 client.once('ready', async () => {
     Commands.init();
-    Commands.init(process.env.SERVER_ID); // for testing purpose, deleting it when deployed.
+    // Commands.init(process.env.SERVER_ID); // for testing purpose, deleting it when deployed.
     console.log(`Logged in as ${client.user.tag}`);
 
     await mongoose.connect(process.env.MONGODB_URI);
-    
-    await player.extractors.loadMulti(DefaultExtractors);
-    await player.extractors.register(SpotifyExtractor)
+
+    client.user.setPresence({
+        activities: [{
+            name: "Hi, I'm Daisey! Please to serve you! | /help",
+        }],
+        status: "online"
+    })
 
     // I have tried every way. Researched everything. There is no way to avoid IP block from YouTube and SoundCloud, so I may have to use proxy server, with my own pc.
-    // TODO: implement proxy and add it here.
-    // Tried: cloudflared ❌, localtunnel ❌, ngrok ❌😔, serveo ❌
-    // Upcoming: playit.gg (tcp)
+    // TODO: implement consistent (url) proxy, and unlimited bandwidth (if possible) for free and add it here.
+    // Tried: cloudflared ❌, localtunnel ❌, ngrok ❌😔, serveo ❌ playit.gg (tcp) ❌
 
     // Takeaway:
     // - passing headers in ProxyAgent mean passing it to the destination server, not to the proxy server.
     // - the solution with igops/ngrok-skip-browser-warning:latest repo only work with normal fetch method (CRUD). WHICH the proxy agent do CONNECT tunneling.
     // - TCP MIGHT be the way. By opening raw tunnel connection between your local to the destination server with the proxy is just the tunnel.
+    // - no free proxy service provide unlimited bandwidth and consistent url -> run the music command locally would be a better option, until i decide to port my bot to raspberry pi.
 
-    // Upcoming: serveo
 
-    await player.extractors.register(YoutubeExtractor, {
-        cookie: process.env.YT_COOKIES,
-        proxy: proxyAgent,
-        generateWithPoToken: true,
-        streamOptions: {
-            useClient: "WEB"
-        }
-    });
+    // await player.extractors.register(YoutubeExtractor)
+    // , {
+    //     cookie: process.env.YT_COOKIES,
+    //     proxy: proxyAgent,
+    //     generateWithPoToken: true,
+    //     streamOptions: {
+    //         useClient: "WEB"
+    //     }
+    // });
 
     // for testing only - prod use one in guildCreate event
-    const guild = client.guilds.cache.get(process.env.SERVER_ID);
-    await adminPermInit(guild);
+    // const guild = client.guilds.cache.get(process.env.SERVER_ID);
+    // await adminPermInit(guild);
 });
 
 client.on('guildCreate', async (guild) => {
@@ -232,7 +214,7 @@ client.on('messageCreate', async (message) => {
 })
 
 
-client.login(process.env.BOT_TOKEN);
+client.login(process.env.DAISEY_BOT_TOKEN);
 
 module.exports = {
     GrantedPerms: {
