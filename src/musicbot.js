@@ -1,6 +1,23 @@
+// This and music.mjs is part of another bot, dedicated for music player bot -> ListenWDaisey.
+// This bot will run locally, see note below.
+
+/* 
+   Why do this... I wished I'd had other options, but...
+   I have tried every way. Researched everything. There is no way to avoid IP block from YouTube and SoundCloud, so I may have to use proxy server, with my own pc.
+   TODO: implement consistent (url) proxy, and unlimited bandwidth (if possible) for free and add it here.
+   Tried: cloudflared ❌, localtunnel ❌, ngrok ❌😔, serveo ❌ playit.gg (tcp) ❌
+
+   Takeaway:
+   - passing headers in ProxyAgent mean passing it to the destination server, not to the proxy server.
+   - the solution with igops/ngrok-skip-browser-warning:latest repo only work with normal fetch method (CRUD). WHICH the proxy agent do CONNECT tunneling.
+   - TCP MIGHT be the way. By opening raw tunnel connection between your local to the destination server with the proxy is just the tunnel.
+   - no free proxy service provide unlimited bandwidth and consistent url -> run the music command locally would be a better option, until i decide to port my bot to raspberry pi.
+
+   Conclusion: The music bot will be running locally on my machine, for now...
+ */ 
+
 const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
-// const { YoutubeExtractor } = require('discord-player-youtubei');
 const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
 const { SpotifyExtractor } = require('discord-player-spotify');
 const { GatewayIntentBits, Client, SlashCommandBuilder, EmbedBuilder, ActivityType } = require('discord.js');
@@ -39,6 +56,8 @@ player.events.on('playerError', (queue, error, track) => {
 client.once('ready', async () => {
     await player.extractors.loadMulti(DefaultExtractors);
     await player.extractors.register(SpotifyExtractor);
+
+    // discord-player-youtubei@beta's extractor, if discord-player-googlevideo's one doesn't work try switching to this.
     // await player.extractors.register(YoutubeExtractor, {
     //     cookie: process.env.YT_COOKIES,
     //     generateWithPoToken: true,
@@ -46,6 +65,8 @@ client.once('ready', async () => {
     //         useClient: "WEB"
     //     }
     // });
+
+    // current working youtube extractor "discord-player-googlevideo"
     await player.extractors.register(YoutubeSabrExtractor);
 
     const command_names = {
@@ -74,12 +95,10 @@ client.once('ready', async () => {
                 .setDescription("Play music from the top result of the search.")
                 .addStringOption(option => 
                     option.setName("query")
-                        // .setRequired(true)
                         .setDescription("URL or keyword to search for music and play.")
                 )
                 .addStringOption(option => 
                     option.setName("playlist")
-                        // .setRequired(true)
                         .setDescription("Playlist name to play.")
                 )
                 .addStringOption(option => 

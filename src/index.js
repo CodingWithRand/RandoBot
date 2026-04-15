@@ -6,11 +6,6 @@ http.createServer((req, res) => {
   res.end();
 }).listen(8080);
 
-// const { ProxyAgent, setGlobalDispatcher, fetch } = require('undici');
-
-// const proxyAgent =  new ProxyAgent("http://having-relevant.gl.joinmc.link")
-
-// setGlobalDispatcher(proxyAgent);
 
 const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const { getChatbotConfigs } = require('./commands/chatbot.mjs');
@@ -72,7 +67,7 @@ async function adminPermInit(guild) {
 
 client.once('ready', async () => {
     Commands.init();
-    Commands.init(process.env.SERVER_ID); // for testing purpose, deleting it when deployed.
+    Commands.init(process.env.SERVER_ID); // for testing purpose - prod use one in guildCreate event (DO NOT DELETE)
     console.log(`Logged in as ${client.user.tag}`);
 
     await mongoose.connect(process.env.MONGODB_URI);
@@ -84,37 +79,12 @@ client.once('ready', async () => {
         status: "online"
     })
 
-    // I have tried every way. Researched everything. There is no way to avoid IP block from YouTube and SoundCloud, so I may have to use proxy server, with my own pc.
-    // TODO: implement consistent (url) proxy, and unlimited bandwidth (if possible) for free and add it here.
-    // Tried: cloudflared ❌, localtunnel ❌, ngrok ❌😔, serveo ❌ playit.gg (tcp) ❌
-
-    // Takeaway:
-    // - passing headers in ProxyAgent mean passing it to the destination server, not to the proxy server.
-    // - the solution with igops/ngrok-skip-browser-warning:latest repo only work with normal fetch method (CRUD). WHICH the proxy agent do CONNECT tunneling.
-    // - TCP MIGHT be the way. By opening raw tunnel connection between your local to the destination server with the proxy is just the tunnel.
-    // - no free proxy service provide unlimited bandwidth and consistent url -> run the music command locally would be a better option, until i decide to port my bot to raspberry pi.
-
-
-    // await player.extractors.register(YoutubeExtractor)
-    // , {
-    //     cookie: process.env.YT_COOKIES,
-    //     proxy: proxyAgent,
-    //     generateWithPoToken: true,
-    //     streamOptions: {
-    //         useClient: "WEB"
-    //     }
-    // });
-
-    // for testing only - prod use one in guildCreate event
+    // for testing only - prod use one in guildCreate event (DO NOT DELETE)
     const guild = client.guilds.cache.get(process.env.SERVER_ID);
     await adminPermInit(guild);
 });
 
 client.on('guildCreate', async (guild) => {
-    // const guild_members = await guild.members.fetch();
-    //     newAdminPerm.owner = guild.ownerId;
-    //     guild_members.forEach((gm) => {
-    //         console.log(gm.roles.cache);
     await adminPermInit(guild);
     await Commands.init(guild.id);
 })

@@ -25,14 +25,14 @@ __Parameters__
 3. `height`: specify height for the image (Default is 1024)
 
 ### Music Player
-Play music with provided link or search from its title. You must join a voice chat first before running this command. 3 streaming services (YouTube, Spotify, SoundCloud) are provided for users to search the music, but only YouTube and Spotify are the extractors to play the music. User can choose streaming service when using the `play` or `search` subcommand. The command is `/music`
+Play music with provided link or search from its title. You must join a voice chat first before running this command. 3 streaming services (YouTube, Spotify, SoundCloud) are provided for users to search the music, but only YouTube and Spotify are the extractors to play the music. User can choose streaming service when using the `play` or `search` command. ~~The command is `/music`~~ Now, the music player feature has been implemented onto another bot. See [musicbot.js](./src/musicbot.js) note regarding this.
 
-__Subcommands__
+__Commands__
 1. `play`: play the music with given `query`. If playing, the music will be enqueued instead.
 2. `search`: search for the music from given `query`, and show top 5 of the search result for user to select and play the music through the button.
 3. `skip`: skip a track when the bot is playing music.
 4. `stop`: ~~delete a queue; all of the music that you've enqueued will be deleted.~~ stop the queue from playing.
-5. `controller`: bot sends playback control buttons in chat, you can go to previous track, go backward 10 seconds, pause/resume the track, go forward 10 seconds, or go to the next track, respectively. |◀◀ ◀◀ ▶ ▶▶ ▶▶|
+5. `controller`: bot sends playback control buttons in chat, you can go to previous track, go backward 10 seconds, pause/resume the track, go forward 10 seconds, or go to the next track, respectively. ⏮️⏪▶️⏩⏭️
 6. `pause`: pause a track when the bot is playing music.
 7. `resume`: resume a track when the bot is playing music.
 8. `save`: save the current playing queue as your playlist with given `name`.
@@ -64,7 +64,7 @@ Powerful commands that are only permitted to guild's owner, user with "Administr
 - `/help`: view each command details
 
 ## Version Release Log
-__Current Version: 0.0.0__
+__Current Version: 1.0.1-3__
 
 ### *v0.0.0* 
 - Publish the bot's source code to github
@@ -87,8 +87,20 @@ __Current Version: 0.0.0__
 - `/music` command added (Pt.2) with subcommands `controller` and renamed `dropq` to `stop` for clarity.
 
 ### *v.1.0.1*
-- Migrate JSON file database for chatbot and permission management to [MongoDB](https://www.mongodb.com/)
-- Update `/chatbot` and `/image` commands from the changes of [pollinations.ai](https://pollinations.ai/). These changes has already been documented in the README file.
-
-### *v.1.1.0*
-- `/music` command added (Pt.3) with subcommands `pause`, `resume`, `save`, `delpl`, `list`, `queue`, with considering adding `forward` and `backward`
+- Part 1
+    - Migrate JSON file database for chatbot and permission management to [MongoDB](https://www.mongodb.com/)
+    - Update `/chatbot` and `/image` commands from the changes of [pollinations.ai](https://pollinations.ai/). These changes has already been documented in the README file.
+- Part 2
+    - `/music` command added (Pt.3) with subcommands `pause`, `resume`, `save`, `delpl`, `list`, `queue`, with considering adding `forward` and `backward`
+- Part 3 
+    - Rebranding the bot.
+        1. Change the name from `RandoBot` -> `Daisey`
+        2. Change profile pictures
+        3. Add bot description
+        4. Add bot status
+    - `/music` has been migrated to a new bot (ListenWDaisey) entirely to solve the youtube and soundcloud extractors not working on remote server (Render)
+    - Recount version
+- Part 4 (Upcoming)
+    - Perform deep test.
+    - Handle unexpect errors/exceptions (e.g. [GuildMembersTimeout]: Members didn't arrive in time.)
+    - Add more features to music bot.
