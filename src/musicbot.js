@@ -146,7 +146,10 @@ client.once('ready', async () => {
             .setDescription("Show the list of your saved playlists."),
         queue: new SlashCommandBuilder()
             .setName("queue")
-            .setDescription("Show the current music queue.")
+            .setDescription("Show the current music queue."),
+        leave: new SlashCommandBuilder()
+            .setName("leave")
+            .setDescription("Make the bot leave the voice channel.")
     };
 
     const disco_api_url = `https://discord.com/api/v10/applications/${process.env.LISTENWDAISEY_BOT_ID}/commands`;

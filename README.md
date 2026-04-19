@@ -39,6 +39,7 @@ __Commands__
 9. `delpl`: delete the playlist from your account.
 10. `list`: show all of your saved playlist
 11. `queue`: show the current playing track, and upcoming track in the queue.
+12. `leave`: make the bot leave the voice channel.
 
 *May add*
 - `forward`: forward the track with the specify `duration` or 10 seconds as the default duration
@@ -100,6 +101,10 @@ __Current Version: 1.0.1-3__
         4. Add bot status
     - `/music` has been migrated to a new bot (ListenWDaisey) entirely to solve the youtube and soundcloud extractors not working on remote server (Render)
     - Recount version
+    - Patch Note (1)
+    > 1. Make the bot leave the voice channel on its own after 30 seconds of empty channel. (Music module)
+    > 2. `/leave` command added
+    > 3. Fix the bot initialize code.
 - Part 4 (Upcoming)
     - Perform deep test.
     - Handle unexpect errors/exceptions (e.g. [GuildMembersTimeout]: Members didn't arrive in time.)

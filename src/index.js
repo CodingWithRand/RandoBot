@@ -66,11 +66,14 @@ async function adminPermInit(guild) {
 }
 
 client.once('ready', async () => {
-    Commands.init();
-    Commands.init(process.env.SERVER_ID); // for testing purpose - prod use one in guildCreate event (DO NOT DELETE)
-    console.log(`Logged in as ${client.user.tag}`);
-
     await mongoose.connect(process.env.MONGODB_URI);
+
+    // Auto init every time when update/restart.
+    for(const guild of client.guilds.cache.values()) {
+        await adminPermInit(guild);
+        await Commands.init(guild.id);
+    }
+    console.log(`Logged in as ${client.user.tag}`);
 
     client.user.setPresence({
         activities: [{
@@ -78,10 +81,6 @@ client.once('ready', async () => {
         }],
         status: "online"
     })
-
-    // for testing only - prod use one in guildCreate event (DO NOT DELETE)
-    const guild = client.guilds.cache.get(process.env.SERVER_ID);
-    await adminPermInit(guild);
 });
 
 client.on('guildCreate', async (guild) => {
@@ -91,10 +90,21 @@ client.on('guildCreate', async (guild) => {
   
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
+
+    function checkUnavailability(commandName) {
+        const thisGuildCommands = Commands.commands_list.get(interaction.guild.id);
+        if (!thisGuildCommands) {
+            console.log("Commands have not been initialized (somehow), reinitializing...");
+            Commands.init(interaction.guild.id);
+            return false;
+        }
+        return Array.from(thisGuildCommands, ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === commandName) === -1;
+    }
+
     switch(interaction.commandName){
         case 'date': 
             await interaction.deferReply();
-            if(Array.from(Commands.commands_list.get(interaction.guild.id), ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === "date") === -1){
+            if(checkUnavailability("date")){
                 await interaction.followUp({ content: "The command is not available in this server as it may have been deleted." });
                 break;
             }
@@ -102,14 +112,14 @@ client.on('interactionCreate', async (interaction) => {
             break;
         case 'rm':
             await interaction.deferReply({ ephemeral: true });
-            if(Array.from(Commands.commands_list.get(interaction.guild.id), ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === "rm") === -1){
+            if(checkUnavailability("rm")){
                 await interaction.followUp({ content: "The command is not available in this server as it may have been deleted." });
                 break;
             }
             await interaction.followUp({ embeds: [await Commands.command_funcs.getRoleMembers(interaction.guild, "cmd-rm")], ephemeral: true });
             break;
         case 'chatbot':
-            if(Array.from(Commands.commands_list.get(interaction.guild.id), ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === "chatbot") === -1){
+            if(checkUnavailability("chatbot")){
                 await interaction.reply({ content: "The command is not available in this server as it may have been deleted." });
                 break;
             }
@@ -117,7 +127,7 @@ client.on('interactionCreate', async (interaction) => {
             break;
         case 'image':
             await interaction.deferReply({ timeout: 60000 });
-            if(Array.from(Commands.commands_list.get(interaction.guild.id), ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === "image") === -1){
+            if(checkUnavailability("image")){
                 await interaction.followUp({ content: "The command is not available in this server as it may have been deleted." });
                 break;
             }
@@ -133,7 +143,7 @@ client.on('interactionCreate', async (interaction) => {
             break;
         case 'music':
             await interaction.deferReply({ timeout: 60000 });
-            if(Array.from(Commands.commands_list.get(interaction.guild.id), ([,cmdData]) => (cmdData)).findIndex(cmd => cmd.name === "music") === -1){
+            if(checkUnavailability("music")){
                 await interaction.followUp({ content: "The command is not available in this server as it may have been deleted." });
                 break;
             }

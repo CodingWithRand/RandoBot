@@ -63,7 +63,8 @@ async function searchTracks(interaction, query, player) {
         const track = top5tracks[index];
         
         const queue = player.nodes.create(i.guild, {
-            metadata: i
+            metadata: i,
+            leaveOnEmptyCooldown: 30000
         });
 
         if (!queue.connection)
@@ -198,7 +199,8 @@ async function playFromQuery(interaction, query, player) {
             searchResult = await player.play(interaction.member.voice?.channel, query, {
                 searchEngine: usingSearchEngine,
                 nodeOptions: {
-                    metadata: interaction
+                    metadata: interaction,
+                    leaveOnEmptyCooldown: 30000
                 },
             });
 
@@ -221,7 +223,8 @@ async function playFromPlaylist(interaction, player) {
         player.play(interaction.member.voice?.channel, url, {
             searchEngine: QueryType.AUTO, // Youtube for now, will do service recognition later.
             nodeOptions: {
-                metadata: interaction
+                metadata: interaction,
+                leaveOnEmptyCooldown: 30000
             },
         });
     })
@@ -328,7 +331,7 @@ export default async function music(interaction) {
         case "resume":
             if(!queue) return await interaction.followUp("Nothing to resume!");
             else {
-                queue.node.pause();
+                queue.node.resume();
                 await interaction.followUp("Resumed playback.");
             }
             break;
@@ -337,7 +340,6 @@ export default async function music(interaction) {
             break;
         case "play":
             if(!interaction.member.voice?.channel) return await interaction.followUp({ content: "Please join a voice channel first!", ephemeral: true });
-
             if(!query && !interaction.options.getString("playlist")) return await interaction.followUp({ content: "Please provide a search query or a playlist name to play!", ephemeral: true });
             else if(!query && interaction.options.getString("playlist")) await playFromPlaylist(interaction, player);
             else if(query) await playFromQuery(interaction, query, player);
@@ -353,6 +355,12 @@ export default async function music(interaction) {
             break;
         case "list":
             await showPlaylists(interaction);
+            break;
+        case "leave":
+            if(queue.connection) {
+                queue.connection.destroy();
+                await interaction.followUp("Left the voice channel.");
+            } else await interaction.followUp("I'm not in a voice channel!");
             break;
             // TODO: Show saved playlist in the db
     }
