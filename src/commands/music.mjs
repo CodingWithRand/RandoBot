@@ -221,7 +221,7 @@ async function playFromPlaylist(interaction, player) {
     if(!playlistToPlay) return await interaction.followUp({ content: "The playlist doesn't exist", ephemeral: true });
 
     // Problem: Track plays in (possibly) random order
-    for(const url of playlistToPlay.tracks) {
+    for(const url of playlistToPlay.tracks.values()) {
         await player.play(interaction.member.voice?.channel, url, {
             searchEngine: QueryType.AUTO, // Youtube for now, will do service recognition later.
             nodeOptions: {
