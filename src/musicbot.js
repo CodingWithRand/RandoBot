@@ -18,6 +18,7 @@
 
 const { Player } = require('discord-player');
 const { DefaultExtractors } = require('@discord-player/extractor');
+// const { YoutubeExtractor } = require('discord-player-youtubei');
 const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
 const { SpotifyExtractor } = require('discord-player-spotify');
 const { GatewayIntentBits, Client, SlashCommandBuilder, EmbedBuilder, ActivityType } = require('discord.js');
@@ -46,6 +47,10 @@ player.events.on('playerStart', (queue, track) => {
 
 player.events.on("queueDelete", (queue) => {
     queue.metadata.channel.send("Queue finished");
+})
+
+player.events.on('error', (queue, error) => {
+    console.log(error.message);
 })
 
 player.events.on('playerError', (queue, error, track) => {
@@ -149,7 +154,103 @@ client.once('ready', async () => {
             .setDescription("Show the current music queue."),
         leave: new SlashCommandBuilder()
             .setName("leave")
-            .setDescription("Make the bot leave the voice channel.")
+            .setDescription("Make the bot leave the voice channel."),
+        skipto: new SlashCommandBuilder()
+            .setName("skipto")
+            .setDescription("Skip to a specific track in the queue.")
+            .addIntegerOption(option =>
+                option.setName("tracknumber")
+                    .setRequired(true)
+                    .setDescription("Track number to skip to.")
+            ),
+        swap: new SlashCommandBuilder()
+            .setName("swap")
+            .setDescription("Swap two tracks in the queue.")
+            .addIntegerOption(option =>
+                option.setName("tracknumber1")
+                    .setRequired(true)
+                    .setDescription("First track number to swap.")
+            )
+            .addIntegerOption(option =>
+                option.setName("tracknumber2")
+                    .setRequired(true)
+                    .setDescription("Second track number to be swapped.")
+            ),
+        reorder: new SlashCommandBuilder()
+            .setName("reorder")
+            .setDescription("Reorder; moving a track from one position to another in the queue.")
+            .addIntegerOption(option =>
+                option.setName("from")
+                    .setRequired(true)
+                    .setDescription("Track number to start from.")
+            )
+            .addIntegerOption(option =>
+                option.setName("to")
+                    .setRequired(true)
+                    .setDescription("Track number to end at.")
+            ),
+        lookup: new SlashCommandBuilder()
+            .setName("lookup")
+            .setDescription("Lookup track information with given track number.")
+            .addIntegerOption(option =>
+                option.setName("tracknumber")
+                    .setRequired(true)
+                    .setDescription("Track number to lookup.")
+            ),
+        forward: new SlashCommandBuilder()
+            .setName("forward")
+            .setDescription("Forward a track in the queue by specific seconds.")
+            .addIntegerOption(option =>
+                option.setName("seconds")
+                    .setDescription("Seconds to forward.")
+            ),
+        backtrack: new SlashCommandBuilder()
+            .setName("backtrack")
+            .setDescription("Backtrack a track in the queue by specific seconds.")
+            .addIntegerOption(option =>
+                option.setName("seconds")
+                    .setDescription("Seconds to backtrack.")
+            ),
+        playnext: new SlashCommandBuilder()
+            .setName("playnext")
+                .setDescription("/play command, but insert the musics on top of the queue.")
+                .addStringOption(option => 
+                    option.setName("query")
+                        .setDescription("URL or keyword to search for music and play.")
+                )
+                .addStringOption(option => 
+                    option.setName("playlist")
+                        .setDescription("Playlist name to play.")
+                )
+                .addStringOption(option => 
+                    option.setName("service")
+                        .setDescription("Streaming service to play music from. (Optional)")
+                        .addChoices(
+                            { name: "YouTube", value: "yt" },
+                            { name: "Spotify", value: "sp" },
+                            { name: "SoundCloud", value: "sc" },
+                        )
+            ),
+        playfirst: new SlashCommandBuilder()
+            .setName("playfirst")
+                .setDescription("/play command, but insert the musics on top of the queue and immediately play it.")
+                .addStringOption(option => 
+                    option.setName("query")
+                        .setDescription("URL or keyword to search for music and play.")
+                )
+                .addStringOption(option => 
+                    option.setName("playlist")
+                        .setDescription("Playlist name to play.")
+                )
+                .addStringOption(option => 
+                    option.setName("service")
+                        .setDescription("Streaming service to play music from. (Optional)")
+                        .addChoices(
+                            { name: "YouTube", value: "yt" },
+                            { name: "Spotify", value: "sp" },
+                            { name: "SoundCloud", value: "sc" },
+                        )
+            ),
     };
 
     const disco_api_url = `https://discord.com/api/v10/applications/${process.env.LISTENWDAISEY_BOT_ID}/commands`;

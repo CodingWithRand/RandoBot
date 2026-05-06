@@ -22,6 +22,7 @@ async function searchTracks(interaction, query, player) {
         searchResult = await player.search(query, {
             requestedBy: interaction.user,
             searchEngine:
+                // interaction.options.getString("service") === "yt" ? `ext:${YoutubeExtractor.identifier}` :
                 interaction.options.getString("service") === "yt" ? `ext:${YoutubeSabrExtractor.identifier}` :
                 // interaction.options.getString("service") === "sp" ? `ext:${SpotifyExtractor.identifier}` : You don't need it.
                 interaction.options.getString("service") === "sc" ? QueryType.SOUNDCLOUD_SEARCH :
@@ -80,8 +81,7 @@ async function searchTracks(interaction, query, player) {
 }
 
 async function deployController(interaction, queue, history) {
-    if(!interaction.member.voice?.channel) return await interaction.followUp({ content: "Please join a voice channel first!", ephemeral: true });
-    if(!queue) return await interaction.followUp({ content: "Please play some music first!", ephemeral: true });
+    if(!queue || !queue.currentTrack) return await interaction.followUp({ content: "Please play some music first!", ephemeral: true });
     const ctrlBtns = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('track_back_most')
@@ -187,9 +187,11 @@ async function playFromQuery(interaction, query, player) {
         } else if(interaction.options.getString("service") !== "sp") { 
             const usingSearchEngine = 
                 // Non-URL query
+                // interaction.options.getString("service") === "yt" && !isURL(query) ? `ext:${YoutubeExtractor.identifier}` :
                 interaction.options.getString("service") === "yt" && !isURL(query) ? `ext:${YoutubeSabrExtractor.identifier}` :
                 interaction.options.getString("service") === "sc" && !isURL(query) ? QueryType.SOUNDCLOUD_SEARCH :
                 // URL query
+                // interaction.options.getString("service") === "yt" && isURL(query) ? `ext:${YoutubeExtractor.identifier}` :
                 interaction.options.getString("service") === "yt" && isURL(query) ? `ext:${YoutubeSabrExtractor.identifier}` :
                 interaction.options.getString("service") === "sc" && isURL(query) ? QueryType.SOUNDCLOUD_TRACK :
                 // Playlist Non-URL
@@ -219,15 +221,15 @@ async function playFromPlaylist(interaction, player) {
     if(!playlistToPlay) return await interaction.followUp({ content: "The playlist doesn't exist", ephemeral: true });
 
     // Problem: Track plays in (possibly) random order
-    playlistToPlay.tracks.forEach((url) => {
-        player.play(interaction.member.voice?.channel, url, {
+    for(const url of playlistToPlay.tracks) {
+        await player.play(interaction.member.voice?.channel, url, {
             searchEngine: QueryType.AUTO, // Youtube for now, will do service recognition later.
             nodeOptions: {
                 metadata: interaction,
                 leaveOnEmptyCooldown: 30000
             },
         });
-    })
+    }
     
     await interaction.followUp({ content: `Successfully enqueued **${interaction.options.getString("playlist")}**`, ephemeral: false });
 }
@@ -265,7 +267,7 @@ async function deletePlaylist(interaction) {
     const userPlaylists = await MusicPlaylists.findOne({ uid: interaction.user.id })
     if(!userPlaylists) return await interaction.followUp({ content: "You don't have any saved playlists!", ephemeral: true });
     const playlistToDelete = userPlaylists.playlists.get(playlistNameToDelete);
-    if(!playlistToDelete) return await interaction.followUp({ content: "Cannot find the playlist in your account.", ephemeral: true });
+    if(!playlistToDelete) return await interaction.followUp({ content: "Could not find the playlist in your account.", ephemeral: true });
     await userPlaylists.updateOne({ $unset: { [`playlists.${playlistNameToDelete}`]: "" } })
 
     await interaction.followUp({ content: `Successfully deleted **${playlistNameToDelete}** from your account!`, ephemeral: false });
@@ -273,16 +275,14 @@ async function deletePlaylist(interaction) {
 
 async function showQueue(interaction, queue) {
     if(!queue) return await interaction.followUp("The queue is currently empty!");
-    else {
-        const queueEmbed = new EmbedBuilder()
-            .setTitle("Current Music Queue")
-            .setFields(
-                { name: "Now Playing", value: `**${queue.currentTrack.title}** by **${queue.currentTrack.author ?? "Unknown"}**` },
-                { name: "Up Next", value: queue.tracks.data.length > 0 ? queue.tracks.data.slice(0, 5).map((t, i) => `**${i + 1}.** ${t.title} by ${t.author ?? "Unknown"}`).join('\n') : "No more tracks in the queue!" }
-            )
-            .setColor(0xFF0000);
-        await interaction.followUp({ embeds: [queueEmbed] });
-    }
+    const queueEmbed = new EmbedBuilder()
+        .setTitle("Current Music Queue")
+        .setFields(
+            { name: "Now Playing", value: `**${queue.currentTrack.title}** by **${queue.currentTrack.author ?? "Unknown"}**` },
+            { name: "Up Next", value: queue.tracks.data.length > 0 ? queue.tracks.data.slice(0, 5).map((t, i) => `**${i + 1}.** ${t.title} by ${t.author ?? "Unknown"}`).join('\n') : "No more tracks in the queue!" }
+        )
+        .setColor(0xFF0000);
+    await interaction.followUp({ embeds: [queueEmbed] });
 }
 
 async function showPlaylists(interaction) {
@@ -297,7 +297,89 @@ async function showPlaylists(interaction) {
     await interaction.followUp({ embeds: [userPLlist], ephemeral: true });
 }
 
+async function playNext(interaction, queue, query, player, now=false) {
+
+    async function searchOne(q) {
+        function isURL(q) {
+            try {
+                new URL(q);
+                return true;
+            } catch {
+                return false;
+            }
+        }
+        const result = await player.search(q, {
+            requestedBy: interaction.user,
+            searchEngine:
+                // Non-URL query
+                // interaction.options.getString("service") === "yt" && !isURL(query) ? `ext:${YoutubeExtractor.identifier}` :
+                interaction.options.getString("service") === "yt" && !isURL(query) ? `ext:${YoutubeSabrExtractor.identifier}` :
+                interaction.options.getString("service") === "sc" && !isURL(query) ? QueryType.SOUNDCLOUD_SEARCH :
+                // URL query
+                // interaction.options.getString("service") === "yt" && isURL(query) ? `ext:${YoutubeExtractor.identifier}` :
+                interaction.options.getString("service") === "yt" && isURL(query) ? `ext:${YoutubeSabrExtractor.identifier}` :
+                interaction.options.getString("service") === "sc" && isURL(query) ? QueryType.SOUNDCLOUD_TRACK :
+                // Playlist Non-URL
+                // Playlist URL
+                // Fall back 
+                QueryType.AUTO
+        })
+        if (!result || !result.tracks.length) throw new Error(`No tracks found for query: ${q}!`);
+        return result.tracks[0]
+    }
+
+    if(!queue) {
+        if(!query && !interaction.options.getString("playlist")) return await interaction.followUp({ content: "Please provide a search query or a playlist name to play!", ephemeral: true });
+        else if(!query && interaction.options.getString("playlist")) await playFromPlaylist(interaction, player);
+        else if(query) await playFromQuery(interaction, query, player);
+    } else {
+        if(now) {
+            await interaction.followUp("Putting the current playing track before the requested tracks...");
+            queue.insertTrack(queue.currentTrack, 0);
+        }
+
+        if(query) {
+            try {
+                const track = await searchOne(query);
+                queue.insertTrack(track, 0);
+            } catch(e) {
+                return await interaction.followUp(e.message);
+            }
+        } else if(interaction.options.getString("playlist")) {
+            const userPlaylists = await MusicPlaylists.findOne({ uid: interaction.user.id });
+            if(!userPlaylists) return await interaction.followUp({ content: "You don't have any saved playlists!", ephemeral: true });
+            const playlistToPlay = userPlaylists.playlists.get(interaction.options.getString("playlist"));
+            if(!playlistToPlay) return await interaction.followUp({ content: "The playlist doesn't exist", ephemeral: true });
+
+            for(const [i, url] of Array.from(playlistToPlay.tracks.values()).entries()) {
+                try {
+                    const track = await searchOne(url);
+                    queue.insertTrack(track, i);
+                } catch(e) {
+                    await interaction.followUp(e.message);
+                    continue;
+                }
+            }
+            await interaction.followUp(`Successfully enqueued **${interaction.options.getString("playlist")}**`);
+        }
+
+        if (now) queue.node.skip();
+        else await interaction.followUp(`⏭️ Next up: **${queue?.tracks.data[0].title} - ${queue?.tracks.data[0].author}**${interaction.options.getString("playlist") ? ` from **${interaction.options.getString("playlist")}**` : ""}`);
+    }
+}
+
+async function playback(queue, interaction, mode) {
+    // mode true = forward, false = backtrack
+    
+    if(!queue || !queue.currentTrack) return await interaction.followUp(`No playing track to ${mode ? "forward" : "backtrack"}!`);
+    const seconds = interaction.options.getInteger("seconds") && interaction.options.getInteger("seconds") > 0 ? interaction.options.getInteger("seconds") : 10;
+    await interaction.followUp(`${mode ? "Forwarding" : "Backtracking"} **${queue.currentTrack.title} - ${queue.currentTrack.author}** by ${seconds} seconds...`);
+    queue.node.seek(queue.node.getTimestamp().current.value + (seconds * 1000 * (mode ? 1 : -1)));
+}
+
 export default async function music(interaction) {
+    if(!interaction.member.voice?.channel) return await interaction.followUp({ content: "Please join a voice channel first!", ephemeral: true });
+    
     const player = useMainPlayer();
     const history = useHistory(interaction.guild);
     const queue = useQueue(interaction.guild);
@@ -308,38 +390,29 @@ export default async function music(interaction) {
             await searchTracks(interaction, query, player);
             break;
         case "skip":
-            if(!queue) return await interaction.followUp("Nothing to skip!");
-            else {
-                await interaction.followUp("Skipping to the next track...");
-                queue.node.skip();
-            }
+            if(!queue) return await interaction.followUp("No track to skip!");
+            await interaction.followUp("Skipping to the next track...");
+            queue.node.skip();
             break;
         case "stop":
             if(!queue) return await interaction.followUp("No queue to stop!");
-            else {
-                queue.delete();
-                await interaction.followUp("Successfully stopped playback.");
-            }
+            queue.delete();
+            await interaction.followUp("Successfully stopped playback.");
             break;
         case "pause":
-            if(!queue) return await interaction.followUp("Nothing to pause!");
-            else {
-                queue.node.pause();
-                await interaction.followUp("Paused playback.");
-            }
+            if(!queue || !queue.currentTrack) return await interaction.followUp("No playing track to pause!");
+            queue.node.pause();
+            await interaction.followUp("Paused playback.");
             break;
         case "resume":
-            if(!queue) return await interaction.followUp("Nothing to resume!");
-            else {
-                queue.node.resume();
-                await interaction.followUp("Resumed playback.");
-            }
+            if(!queue || !queue.currentTrack) return await interaction.followUp("No playing track to resume!");
+            queue.node.resume();
+            await interaction.followUp("Resumed playback.");
             break;
         case "controller":
             await deployController(interaction, queue, history);
             break;
         case "play":
-            if(!interaction.member.voice?.channel) return await interaction.followUp({ content: "Please join a voice channel first!", ephemeral: true });
             if(!query && !interaction.options.getString("playlist")) return await interaction.followUp({ content: "Please provide a search query or a playlist name to play!", ephemeral: true });
             else if(!query && interaction.options.getString("playlist")) await playFromPlaylist(interaction, player);
             else if(query) await playFromQuery(interaction, query, player);
@@ -363,5 +436,51 @@ export default async function music(interaction) {
             } else await interaction.followUp("I'm not in a voice channel!");
             break;
             // TODO: Show saved playlist in the db
+        case "skipto":
+            if(!queue) return await interaction.followUp("No track to skip!");
+            const trackNumber = interaction.options.getInteger("tracknumber");
+            const track = queue.tracks.toArray()[trackNumber - 1];
+            if(!track) return await interaction.followUp("Could not find a track with that number!");
+            await interaction.followUp(`Skipping to **${track.title} - ${track.author}**...`);
+            queue.node.skipTo(track);
+            break;
+        case "swap":
+            if(!queue) return await interaction.followUp("No tracks to swap!");
+            const [ trackNumber1, trackNumber2 ] = [ interaction.options.getInteger("tracknumber1"), interaction.options.getInteger("tracknumber2") ];
+            const [ track1, track2 ] = [ queue.tracks.toArray()[trackNumber1 - 1], queue.tracks.toArray()[trackNumber2 - 1] ];
+            if(!track1) return await interaction.followUp(`Could not find a track with that number! **#${trackNumber1}**`);
+            if(!track2) return await interaction.followUp(`Could not find a track with that number! **#${trackNumber2}**`);
+            await interaction.followUp(`Successfully swapped **${track1.title} - ${track1.author}** (#${trackNumber1}) and **${track2.title} - ${track2.author}** (#${trackNumber2}) in the queue!`);
+            queue.node.swap(track1, track2)
+            break;
+        case "reorder":
+            if(!queue) return await interaction.followUp("No tracks to move around!");
+            const [ fromTrackNumber, toTrackNumber ] = [ interaction.options.getInteger("from"), interaction.options.getInteger("to") ];
+            const fromTrack = queue.tracks.toArray()[fromTrackNumber - 1];
+            if(!fromTrack) return await interaction.followUp(`Could not find a track with that number! **#${fromTrackNumber}**`);
+            if(toTrackNumber <= 0 || toTrackNumber >= queue.tracks.size) return await interaction.followUp(`New track number exceeds the queue size or is less than 1! **#${toTrackNumber}**`);
+            await interaction.followUp(`Successfully moved **${fromTrack.title} - ${fromTrack.author}** to position **#${toTrackNumber}** of the queue!`);
+            queue.node.move(fromTrack, toTrackNumber - 1);
+            break;
+        case "lookup":
+            if(!queue) return await interaction.followUp("No tracks to look up!");
+            const lookUpTrackNumber = interaction.options.getInteger("tracknumber");
+            if(lookUpTrackNumber === 1) return await interaction.followUp(`Track **#${lookUpTrackNumber}** is **${queue.currentTrack.title} - ${queue.currentTrack.author}** in the current queue!`);
+            const lookUpTrack = queue.tracks.toArray()[lookUpTrackNumber - 1];
+            if(!lookUpTrack) return await interaction.followUp(`Could not find a track with that number! **#${lookUpTrackNumber}**`);
+            await interaction.followUp(`Track **#${lookUpTrackNumber}** is **${lookUpTrack.title} - ${lookUpTrack.author}** in the current queue!`);
+            break;
+        case "forward":
+            await playback(queue, interaction, true);
+            break;
+        case "backtrack":
+            await playback(queue, interaction, false);
+            break;
+        case "playnext":
+            await playNext(interaction, queue, query, player);
+            break;
+        case "playfirst":
+            await playNext(interaction, queue, query, player, true);
+            break;
     }
 }
