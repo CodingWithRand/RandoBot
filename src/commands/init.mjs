@@ -5,9 +5,8 @@ import { admin } from './admin/main.mjs';
 import getDate from './date.mjs';
 import getRoleMembers from './rm.mjs';
 import help from './help.mjs';
-import { chatbot, createHistory, getChatbotTextResponse, preserveHistory } from './chatbot.mjs';
+import { chatbot, createHistory, getChatbotTextResponse, handleChatbotMsg, preserveHistory } from './chatbot.mjs';
 import image from './image.mjs';
-import music from './music.mjs';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -153,7 +152,12 @@ const command_names = {
             subcommand
                 .setName("whois")
                 .setDescription("Show the list of users and roles that have been granted admin permission.")
-        ),
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("gate")
+                .setDescription("Add a keeper to filter incoming users to the server. (Granting server's access role to user)")
+        )
 };
 
 const command_funcs = {
@@ -163,13 +167,13 @@ const command_funcs = {
     image,
     help,
     admin,
-    music
 }
 
 const utility_functions = {
     getChatbotTextResponse,
     createHistory,
-    preserveHistory
+    preserveHistory,
+    handleChatbotMsg
 }
 
 export default { commands_list, command_names, command_funcs, utility_functions, init };

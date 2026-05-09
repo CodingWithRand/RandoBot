@@ -230,3 +230,43 @@ export async function chatbot(interaction) {
         // fs.unlinkSync(currentChannelConfig.chatHistoryFile);
     }
 }
+
+export async function handleChatbotMsg (message) {
+    if(message.author.bot) return;
+
+    const currentChannelConfig = getChatbotConfigs(message.channel.id);
+    if(!currentChannelConfig) return;
+    if(!currentChannelConfig?.isActive) return;
+    if(currentChannelConfig.isTyping) return;
+    
+    message.channel.sendTyping();
+    currentChannelConfig.isTyping = true;
+    const typingStatus = setInterval(() => {
+        if(message.channel) message.channel.sendTyping();
+        if(!currentChannelConfig?.isActive) clearInterval(typingStatus);
+    }, 9000);
+
+    const { ai_response, aiiid, error } = await getChatbotTextResponse(message.content, message, currentChannelConfig.userCreated);
+    if(ai_response){
+        await preserveHistory(aiiid, message, currentChannelConfig.userCreated); // ditch pollinations.ai, adopt gemini-2.5-flash-lite
+        const resChunks = [];
+        let currentChunk = '';
+        let charCount = 0;
+        for (const char of ai_response) {
+            if (charCount >= 1960) {
+                resChunks.push(currentChunk);
+                currentChunk = char;
+                charCount = 1;
+            } else {
+                currentChunk += char;
+                charCount++;
+            }
+        }
+        if (currentChunk) resChunks.push(currentChunk);
+        message.channel.send(`${message.author.toString()}`);
+        for (const chunk of resChunks) message.channel.send(chunk);
+    }
+    else message.channel.send("Unable to get AI response");
+    currentChannelConfig.isTyping = false;
+    clearInterval(typingStatus);
+}

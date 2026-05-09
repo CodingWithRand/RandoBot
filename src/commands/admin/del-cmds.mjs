@@ -1,3 +1,4 @@
+import { MessageFlags } from "discord.js";
 import Commands from "../../commands/init.mjs"
 import dotenv from 'dotenv';
 dotenv.config();
@@ -25,11 +26,11 @@ export default async function delCommand(interaction, cmdId){
     }
 
     const success = async (interaction, data=undefined) => {
-        await interaction.followUp({ content: "Successfully delete the command!", ephemeral: true});
+        await interaction.followUp({ content: "Successfully delete the command!", flags: MessageFlags.Ephemeral });
         if(data) await interaction.followUp(`\`\`\`${data}\`\`\``);
     };
     const error = async (interaction, data=undefined) => {
-        await interaction.followUp({ content: `Couldn't delete the command at the moment\`\`\`${JSON.stringify(data)}\`\`\``, ephemeral: true });
+        await interaction.followUp({ content: `Couldn't delete the command at the moment\`\`\`${JSON.stringify(data)}\`\`\``, flags: MessageFlags.Ephemeral });
     };
 
     return { success, error, fetchingStatus, fetchResult }

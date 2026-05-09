@@ -1,7 +1,7 @@
 import getRoleMembers from "../rm.mjs"
 import { AdminPermissions } from "../../schema.mjs";
-let im;
-import("../../index.js").then((mod) => im = mod);
+import { GrantedPerms } from "./main.mjs";
+import { MessageFlags } from "discord.js";
 
 export default async function revoke_admin(interaction, amr, amu, gp) {
     // To do: work on this function (prob fork from grant_admin)
@@ -34,15 +34,15 @@ export default async function revoke_admin(interaction, amr, amu, gp) {
         }
     }
 
-    im.default.GrantedPerms.set(interaction.guild.id, gp);
+    GrantedPerms.set(interaction.guild.id, gp);
     await AdminPermissions.findOneAndUpdate({ gid: interaction.guild.id }, { perms: gp });
     // fs.writeFileSync(`./admin_perm/${interaction.guild.name}.json`, JSON.stringify(gp));
 
     const success = async (interaction) => {
-        await interaction.followUp({ content: `Successfully revoked admin permission.`, ephemeral: true });
+        await interaction.followUp({ content: `Successfully revoked admin permission.`, flags: MessageFlags.Ephemeral });
     };
     const error = async (interaction) => {
-        await interaction.followUp({ content: errMessage, ephemeral: true });
+        await interaction.followUp({ content: errMessage, flags: MessageFlags.Ephemeral });
     };
 
     return { success, error, ok }

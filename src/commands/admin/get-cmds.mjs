@@ -1,5 +1,5 @@
 import https from "https"
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, MessageFlags } from 'discord.js';
 import dotenv from 'dotenv';
 import { CommandList } from "../../util.mjs";
 dotenv.config();
@@ -51,7 +51,7 @@ export default async function getCommands(interaction, callback) {
             content: "Here are the list of commands details",
             embeds: [CommandEmbedListForAdmin.getEmbed()],
             components: [CommandEmbedListForAdmin.getCtrlBtns()],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             fetchReply: true
         });       
         
@@ -59,7 +59,7 @@ export default async function getCommands(interaction, callback) {
         
     };
     const error = async (interaction, data=undefined) => {
-        await interaction.followUp({ content: `Couldn't show command details list at the moment\`\`\`${JSON.stringify(data)}\`\`\``, ephemeral: true });
+        await interaction.followUp({ content: `Couldn't show command details list at the moment\`\`\`${JSON.stringify(data)}\`\`\``, flags: MessageFlags.Ephemeral });
     };
 
     return { success, error }

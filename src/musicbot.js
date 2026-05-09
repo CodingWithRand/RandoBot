@@ -21,10 +21,10 @@ const { DefaultExtractors } = require('@discord-player/extractor');
 // const { YoutubeExtractor } = require('discord-player-youtubei');
 const { YoutubeSabrExtractor } = require('discord-player-googlevideo');
 const { SpotifyExtractor } = require('discord-player-spotify');
-const { GatewayIntentBits, Client, SlashCommandBuilder, EmbedBuilder, ActivityType } = require('discord.js');
+const { GatewayIntentBits, Client, EmbedBuilder, ActivityType, MessageFlags } = require('discord.js');
 const { CommandList } = require('./util.mjs');
 const mongoose = require('mongoose');
-const { default: music } = require('./commands/music.mjs');
+const { music, command_names } = require('./commands/music/main.mjs');
 require('dotenv').config();
 
 const client = new Client({
@@ -58,7 +58,7 @@ player.events.on('playerError', (queue, error, track) => {
     queue.node.skip();
 })
 
-client.once('ready', async () => {
+client.once('clientReady', async () => {
     await player.extractors.loadMulti(DefaultExtractors);
     await player.extractors.register(SpotifyExtractor);
 
@@ -73,185 +73,6 @@ client.once('ready', async () => {
 
     // current working youtube extractor "discord-player-googlevideo"
     await player.extractors.register(YoutubeSabrExtractor);
-
-    const command_names = {
-        help: new SlashCommandBuilder()
-            .setName("help")
-            .setDescription("Show all available commands and their usage details."),
-        query: new SlashCommandBuilder()
-            .setName("search")
-                .setDescription("Search top 5 music results for you to review and choose to play manually.")
-                .addStringOption(option => 
-                    option.setName("query")
-                        .setRequired(true)
-                        .setDescription("URL or keyword to search for music")
-                )
-                .addStringOption(option => 
-                    option.setName("service")
-                        .setDescription("Streaming service to play music from. (Optional)")
-                        .addChoices(
-                            { name: "YouTube", value: "yt" },
-                            { name: "Spotify", value: "sp" },
-                            { name: "SoundCloud", value: "sc" },
-                        )
-                ),
-        play: new SlashCommandBuilder()
-            .setName("play")
-                .setDescription("Play music from the top result of the search.")
-                .addStringOption(option => 
-                    option.setName("query")
-                        .setDescription("URL or keyword to search for music and play.")
-                )
-                .addStringOption(option => 
-                    option.setName("playlist")
-                        .setDescription("Playlist name to play.")
-                )
-                .addStringOption(option => 
-                    option.setName("service")
-                        .setDescription("Streaming service to play music from. (Optional)")
-                        .addChoices(
-                            { name: "YouTube", value: "yt" },
-                            { name: "Spotify", value: "sp" },
-                            { name: "SoundCloud", value: "sc" },
-                        )
-                ),
-        skip: new SlashCommandBuilder()
-            .setName("skip")
-            .setDescription("Skip the current music."),
-        stop: new SlashCommandBuilder()
-            .setName("stop")
-            .setDescription("Delete the entire music queue and stop the music."),
-        pause: new SlashCommandBuilder()
-            .setName("pause")
-            .setDescription("Pause the current music."),
-        resume: new SlashCommandBuilder()
-            .setName("resume")
-            .setDescription("Resume the paused music."),
-        controller: new SlashCommandBuilder()
-            .setName("controller")
-            .setDescription("Music player controller"),
-        save: new SlashCommandBuilder()
-            .setName("save")
-            .setDescription("Save the current music queue as a playlist.")
-            .addStringOption(option => 
-                option.setName("name")
-                    .setRequired(true)
-                    .setDescription("Name of the playlist to save.")
-            ),
-        delpl: new SlashCommandBuilder()
-            .setName("delpl")
-            .setDescription("Delete a saved playlist.")
-            .addStringOption(option => 
-                option.setName("name")
-                    .setRequired(true)
-                    .setDescription("Name of the playlist to delete.")
-            ),
-        list: new SlashCommandBuilder()
-            .setName("list")
-            .setDescription("Show the list of your saved playlists."),
-        queue: new SlashCommandBuilder()
-            .setName("queue")
-            .setDescription("Show the current music queue."),
-        leave: new SlashCommandBuilder()
-            .setName("leave")
-            .setDescription("Make the bot leave the voice channel."),
-        skipto: new SlashCommandBuilder()
-            .setName("skipto")
-            .setDescription("Skip to a specific track in the queue.")
-            .addIntegerOption(option =>
-                option.setName("tracknumber")
-                    .setRequired(true)
-                    .setDescription("Track number to skip to.")
-            ),
-        swap: new SlashCommandBuilder()
-            .setName("swap")
-            .setDescription("Swap two tracks in the queue.")
-            .addIntegerOption(option =>
-                option.setName("tracknumber1")
-                    .setRequired(true)
-                    .setDescription("First track number to swap.")
-            )
-            .addIntegerOption(option =>
-                option.setName("tracknumber2")
-                    .setRequired(true)
-                    .setDescription("Second track number to be swapped.")
-            ),
-        reorder: new SlashCommandBuilder()
-            .setName("reorder")
-            .setDescription("Reorder; moving a track from one position to another in the queue.")
-            .addIntegerOption(option =>
-                option.setName("from")
-                    .setRequired(true)
-                    .setDescription("Track number to start from.")
-            )
-            .addIntegerOption(option =>
-                option.setName("to")
-                    .setRequired(true)
-                    .setDescription("Track number to end at.")
-            ),
-        lookup: new SlashCommandBuilder()
-            .setName("lookup")
-            .setDescription("Lookup track information with given track number.")
-            .addIntegerOption(option =>
-                option.setName("tracknumber")
-                    .setRequired(true)
-                    .setDescription("Track number to lookup.")
-            ),
-        forward: new SlashCommandBuilder()
-            .setName("forward")
-            .setDescription("Forward a track in the queue by specific seconds.")
-            .addIntegerOption(option =>
-                option.setName("seconds")
-                    .setDescription("Seconds to forward.")
-            ),
-        backtrack: new SlashCommandBuilder()
-            .setName("backtrack")
-            .setDescription("Backtrack a track in the queue by specific seconds.")
-            .addIntegerOption(option =>
-                option.setName("seconds")
-                    .setDescription("Seconds to backtrack.")
-            ),
-        playnext: new SlashCommandBuilder()
-            .setName("playnext")
-                .setDescription("/play command, but insert the musics on top of the queue.")
-                .addStringOption(option => 
-                    option.setName("query")
-                        .setDescription("URL or keyword to search for music and play.")
-                )
-                .addStringOption(option => 
-                    option.setName("playlist")
-                        .setDescription("Playlist name to play.")
-                )
-                .addStringOption(option => 
-                    option.setName("service")
-                        .setDescription("Streaming service to play music from. (Optional)")
-                        .addChoices(
-                            { name: "YouTube", value: "yt" },
-                            { name: "Spotify", value: "sp" },
-                            { name: "SoundCloud", value: "sc" },
-                        )
-            ),
-        playfirst: new SlashCommandBuilder()
-            .setName("playfirst")
-                .setDescription("/play command, but insert the musics on top of the queue and immediately play it.")
-                .addStringOption(option => 
-                    option.setName("query")
-                        .setDescription("URL or keyword to search for music and play.")
-                )
-                .addStringOption(option => 
-                    option.setName("playlist")
-                        .setDescription("Playlist name to play.")
-                )
-                .addStringOption(option => 
-                    option.setName("service")
-                        .setDescription("Streaming service to play music from. (Optional)")
-                        .addChoices(
-                            { name: "YouTube", value: "yt" },
-                            { name: "Spotify", value: "sp" },
-                            { name: "SoundCloud", value: "sc" },
-                        )
-            ),
-    };
 
     const disco_api_url = `https://discord.com/api/v10/applications/${process.env.LISTENWDAISEY_BOT_ID}/commands`;
     const adding_commands = await fetch(disco_api_url, {
@@ -287,7 +108,7 @@ client.on('interactionCreate', async (interaction) => {
     if (!interaction.isCommand()) return;
     switch (interaction.commandName) {
         case 'help':
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
             const cmdListForUser = new EmbedBuilder()
                 .setColor("#ffffff")
                 .setTitle("Commands Help Center")
@@ -321,7 +142,7 @@ client.on('interactionCreate', async (interaction) => {
             await interaction.editReply({ 
                 embeds: [CommandEmbedListForUser.getEmbed()],
                 components: [CommandEmbedListForUser.getCtrlBtns()],
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 fetchReply: true
             });
         

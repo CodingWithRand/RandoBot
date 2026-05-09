@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Collection, ComponentType } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Collection, ComponentType, MessageFlags } from 'discord.js';
 
 export default async function clearMessages(interaction, reqAmount) {
     let ok = true;
@@ -21,7 +21,7 @@ export default async function clearMessages(interaction, reqAmount) {
         await interaction.followUp({ 
             content: "This may clear all messages in the channel, would you like to proceed?",
             components: [btnRow],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             fetchReply: true
         })
 
@@ -31,7 +31,7 @@ export default async function clearMessages(interaction, reqAmount) {
                 time: 60000 
             });
             if(btnInteraction.customId === 'confirm_clear') {
-                await btnInteraction.deferReply({ timeout: 60000, ephemeral: true });
+                await btnInteraction.deferReply({ timeout: 60000, flags: MessageFlags.Ephemeral });
                 try {
                     console.log(interaction.channel.messages.cache.size);
                     while(true) {
@@ -42,17 +42,17 @@ export default async function clearMessages(interaction, reqAmount) {
                         if(deletable.size === 0) break;
                         await interaction.channel.bulkDelete(deletable);
                     }
-                    await btnInteraction.followUp({ content: "Clearing process has been completed", ephemeral: true });
+                    await btnInteraction.followUp({ content: "Clearing process has been completed", flags: MessageFlags.Ephemeral });
                 } catch (err) {
                     console.error(err);
-                    if(err.code === 50034) await btnInteraction.followUp({ content: "Messages are too old to be cleared", ephemeral: true})
+                    if(err.code === 50034) await btnInteraction.followUp({ content: "Messages are too old to be cleared", flags: MessageFlags.Ephemeral })
                     else {
                         ok = false;
-                        await btnInteraction.followUp({ content: "Something went wrong, abort the clearing process", ephemeral: true });
+                        await btnInteraction.followUp({ content: "Something went wrong, abort the clearing process", flags: MessageFlags.Ephemeral });
                     }
                 }
             } else if (btnInteraction.customId === 'cancel_clear') {
-                await btnInteraction.reply({ content: "Clearing process has been cancelled", ephemeral: true });
+                await btnInteraction.reply({ content: "Clearing process has been cancelled", flags: MessageFlags.Ephemeral });
             }
         } catch (error) {
             // Timeout or other error
@@ -72,7 +72,7 @@ export default async function clearMessages(interaction, reqAmount) {
                 reqAmount -= 100;
             }
         } catch (error) {
-            if(error.code === 50034) await interaction.followUp({ content: "Messages are too old to be cleared", ephemeral: true})
+            if(error.code === 50034) await interaction.followUp({ content: "Messages are too old to be cleared", flags: MessageFlags.Ephemeral })
             else{
                 ok = false;
                 console.error('Error clearing messages:', error);
@@ -83,10 +83,10 @@ export default async function clearMessages(interaction, reqAmount) {
     const success = async (interaction, { deleted_amount, all }) => {
         console.log(deleted_amount)
         if(all) return;
-        interaction.followUp({ content: `Cleared ${deleted_amount} messages.`, ephemeral: true });
+        interaction.followUp({ content: `Cleared ${deleted_amount} messages.`, flags: MessageFlags.Ephemeral });
     };
     const error = async (interaction) => {
-        interaction.followUp({ content: "Something went wrong, unable to clear messages", ephemeral: true });
+        interaction.followUp({ content: "Something went wrong, unable to clear messages", flags: MessageFlags.Ephemeral });
     };
 
     return { success, error, ok, deleted_amount, all }

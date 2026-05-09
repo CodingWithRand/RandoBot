@@ -1,6 +1,7 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from "discord.js";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags, PermissionsBitField } from "discord.js";
 import Commands from "../../commands/init.mjs"
 import { getCommandInputDataType, getOptionChoices } from "../../util.mjs";
+import { AdminPermissions } from "../../schema.mjs";
 
 // Modular imports of admin commands' functions
 import getCommands from "./get-cmds.mjs";
@@ -8,6 +9,48 @@ import delCommand from "./del-cmds.mjs";
 import clearMessages from "./clear-msg.mjs";
 import grant_admin from "./grant.mjs";
 import revoke_admin from "./revoke.mjs";
+import { gateSetup } from "./gate.mjs";
+
+// Admin command initialization ~~(ONE SERVER, NEED CHANGE)~~ Changed!
+const initted = new Map(); // ok
+const granted_perms = new Map();
+
+// TODO: migrate to mongodb. Also look -> grant.mjs, rm.mjs [DONE]
+
+export async function adminPermInit(guild) {
+    const adminPerm = await AdminPermissions.findOne({ gid: guild.id });
+    let newAdminPerm = {
+        owner: null,
+        admins: [],
+        permitted: {
+            roles: [],
+            users: []
+        }
+    };
+
+    if(!adminPerm) {
+        newAdminPerm.owner = guild.ownerId;
+        const guild_members = await guild.members.fetch();
+        guild_members.forEach((gm) => {
+            if(gm.permissions.has(PermissionsBitField.Flags.Administrator)) newAdminPerm.admins.push(gm.id);
+        })
+        await AdminPermissions.create({ gid: guild.id, perms: newAdminPerm });
+        granted_perms.set(guild.id, newAdminPerm);
+    }
+    else if(adminPerm && !granted_perms.has(guild.id)) {
+        const guild_members = await guild.members.fetch();
+        guild_members.forEach((gm) => {
+            if(gm.permissions.has(PermissionsBitField.Flags.Administrator)) newAdminPerm.admins.push(gm.id);
+        })
+        newAdminPerm = {
+            ...newAdminPerm,
+            owner: adminPerm.perms.owner,
+            permitted: adminPerm.perms.permitted
+        }
+        await AdminPermissions.findOneAndUpdate({ gid: guild.id }, { perms: newAdminPerm });
+        granted_perms.set(guild.id, newAdminPerm);
+    }
+}
 
 // Boilerplate function
 async function execute(interaction, { permission, command }){
@@ -24,10 +67,10 @@ async function execute(interaction, { permission, command }){
                 error(interaction);
             }
         } catch (error) {
-            await interaction.followUp({ content: `Something went wrong, couldn't satisfy your action at the moment\`\`\`${error}\`\`\``, ephemeral: true });
+            await interaction.followUp({ content: `Something went wrong, couldn't satisfy your action at the moment\`\`\`${error}\`\`\``, flags: MessageFlags.Ephemeral });
         }
     } else {
-        await interaction.followUp({ content: "You don't have permission to initialize admin commands.", ephemeral: true });
+        await interaction.followUp({ content: "You don't have permission to initialize admin commands.", flags: MessageFlags.Ephemeral });
     }
 }
 
@@ -54,12 +97,13 @@ async function init(interaction, initiation){
                     })()}` : "\`No parameters\`"}
             ` })
         });
-        await interaction.guild.members.fetch()
+
+        //guild.members.cache or guild.members.fetch()? Hmmm...
         const userRoles = await interaction.guild.members.cache.get(interaction.user.id).roles.cache.map(role => role.name);
-        await interaction.followUp({ content: `Hello, ${interaction.user.username} (Role: ${userRoles.join(", ")}). It seems like you've just initialized the administrator console.\nHere are the available admin commands you can use\n**Note: You'll be allow to use admin commands for 30 minutes per each initialization**`, embeds: [adminCommandsEmbed], ephemeral: true });
+        await interaction.followUp({ content: `Hello, ${interaction.user.username} (Role: ${userRoles.join(", ")}). It seems like you've just initialized the administrator console.\nHere are the available admin commands you can use\n**Note: You'll be allow to use admin commands for 30 minutes per each initialization**`, embeds: [adminCommandsEmbed], flags: MessageFlags.Ephemeral });
     };
     const error = async (interaction, data=undefined) => {
-        await interaction.followUp({ content: `Couldn't initialize the console at the moment\`\`\`${JSON.stringify(data)}\`\`\``, ephemeral: true});
+        await interaction.followUp({ content: `Couldn't initialize the console at the moment\`\`\`${JSON.stringify(data)}\`\`\``, flags: MessageFlags.Ephemeral });
     };
 
     return { success, error }
@@ -110,7 +154,7 @@ async function vc(defaultPermission, interaction) {
 async function dc(defaultPermission, interaction) {
     let removingCommandIds = [];
     if(!interaction.options.getString("commands")){
-        await interaction.followUp({ content: "You need to provide command name or id to delete", ephemeral: true });
+        await interaction.followUp({ content: "You need to provide command name or id to delete", flags: MessageFlags.Ephemeral });
         return;
     }
     const removingCommands = interaction.options.getString("commands");
@@ -124,7 +168,7 @@ async function dc(defaultPermission, interaction) {
         }
     };
     if(removingCommandIds.length === 0){
-        await interaction.followUp({ content: "No valid command name or id to delete", ephemeral: true });
+        await interaction.followUp({ content: "No valid command name or id to delete", flags: MessageFlags.Ephemeral });
         return;
     }
     const delConfirmation = new ActionRowBuilder()
@@ -144,14 +188,14 @@ async function dc(defaultPermission, interaction) {
             removingCommandIds.forEach((cmdId) => showingCmdNameWithId.push(`${cmdId} - ${Commands.commands_list.get(interaction.guild.id).get(cmdId).name}`));
             return showingCmdNameWithId.join('\n');
         }
-    )()}\`\`\`would you like to proceed?`, components: [delConfirmation], ephemeral: true, fetchReply: true })
+    )()}\`\`\`would you like to proceed?`, components: [delConfirmation], flags: MessageFlags.Ephemeral, fetchReply: true })
 
     const btnInteraction = await (await interaction.fetchReply()).awaitMessageComponent({ 
         componentType: ComponentType.Button, 
         time: 60000
     });
     if(btnInteraction.customId === 'confirm_del_cmd') {
-        await btnInteraction.deferReply({ ephemeral: true });
+        await btnInteraction.deferReply({ flags: MessageFlags.Ephemeral });
         try {
             const { success, error, fetchingStatus, fetchResult } = await adminCommands.delCommand.body(interaction, removingCommandIds)
             await execute(btnInteraction, { permission: defaultPermission, command: {
@@ -165,8 +209,8 @@ async function dc(defaultPermission, interaction) {
             console.error(err)
             await execute(btnInteraction, { permission: defaultPermission, command: {
                 method: {
-                    success: async function (interaction) { await interaction.followUp({ content: "Incorrect command syntax", ephemeral: true })},
-                    error: async function (interaction) { await interaction.followUp({ content: "Something went wrong. Currently unable to delete the command", ephemeral: true }) } 
+                    success: async function (interaction) { await interaction.followUp({ content: "Incorrect command syntax", flags: MessageFlags.Ephemeral })},
+                    error: async function (interaction) { await interaction.followUp({ content: "Something went wrong. Currently unable to delete the command", flags: MessageFlags.Ephemeral }) } 
                 },
                 status: { ok: true },
                 acceptSuccessData: false,
@@ -195,7 +239,7 @@ async function cls(defaultPermission, interaction) {
 async function grant_or_revoke(defaultPermission, interaction, granted_perms, m) {
     let addminRoles = interaction.options.getString("roles");
     let addminUsers = interaction.options.getString("users");
-    if(!addminRoles && !addminUsers) return await interaction.followUp({ content: "You need to provide at least one role or user to add to admin list", ephemeral: true });
+    if(!addminRoles && !addminUsers) return await interaction.followUp({ content: "You need to provide at least one role or user to add to admin list", flags: MessageFlags.Ephemeral });
     if(addminRoles) addminRoles = addminRoles.split(" ");
     if(addminUsers) addminUsers = addminUsers.split(" ");
     let statenfunc;
@@ -211,12 +255,13 @@ async function grant_or_revoke(defaultPermission, interaction, granted_perms, m)
 }
 
 // Main admin command handler
-async function admin(interaction, initted, granted_perms) {
+export async function admin(interaction) {
+    const tggp = granted_perms.get(interaction.guild.id);
     const defaultPermission = (
-        granted_perms.owner === interaction.user.id || 
-        granted_perms.admins.includes(interaction.user.id) ||
-        granted_perms.permitted.roles.includes(interaction.member.roles.cache.find((r) => r.name)) ||
-        granted_perms.permitted.users.includes(interaction.user.id)
+        tggp.owner === interaction.user.id || 
+        tggp.admins.includes(interaction.user.id) ||
+        tggp.permitted.roles.includes(interaction.member.roles.cache.find((r) => r.name)) ||
+        tggp.permitted.users.includes(interaction.user.id)
     )
 
     if(interaction.options.getSubcommand() === "init") {
@@ -239,11 +284,11 @@ async function admin(interaction, initted, granted_perms) {
     }
 
     if(!initted.get(interaction.user.id)) {
-        await interaction.followUp({ content: "You need to initialize the admin commands first using `/admin init` command", ephemeral: true });
+        await interaction.followUp({ content: "You need to initialize the admin commands first using `/admin init` command", flags: MessageFlags.Ephemeral });
         return;
     }
     if(!defaultPermission) {
-        await interaction.followUp({ content: "You don't have permission to use admin commands!", ephemeral: true });
+        await interaction.followUp({ content: "You don't have permission to use admin commands!", flags: MessageFlags.Ephemeral });
         return;
     }
     // Switch other $ sign command to slash command
@@ -258,16 +303,19 @@ async function admin(interaction, initted, granted_perms) {
             await cls(defaultPermission, interaction);
             break;
         case "grant":
-            await grant_or_revoke(defaultPermission, interaction, granted_perms, "g");
+            await grant_or_revoke(defaultPermission, interaction, tggp, "g");
             break;
         case "revoke":
-            await grant_or_revoke(defaultPermission, interaction, granted_perms, "r");
+            await grant_or_revoke(defaultPermission, interaction, tggp, "r");
             break;
         case "whois":
-            await interaction.followUp({ embeds: [await Commands.command_funcs.getRoleMembers(interaction.guild, "cmd-admin-whois", granted_perms)], ephemeral: true });
+            await interaction.followUp({ embeds: [await Commands.command_funcs.getRoleMembers(interaction.guild, "cmd-admin-whois", tggp)], flags: MessageFlags.Ephemeral });
+            break;
+        case "gate":
+            await gateSetup(interaction)
             break;
         default:
-            await interaction.followUp({ content: "Invalid admin command.", ephemeral: true });
+            await interaction.followUp({ content: "Invalid admin command.", flags: MessageFlags.Ephemeral });
     }
 }
 
@@ -343,7 +391,13 @@ const adminCommands = {
     whois: {
         name: "whois",
         description: "Show the list of users and roles that have been granted admin permission.",
+    },
+    gate: {
+        name: "gate",
+        description: "Add a keeper to filter incoming users to the server. (Granting server's access role to user)",
     }
 };
 
-export { adminCommands, admin };
+export const GrantedPerms = {
+    set: (gid, perms) => granted_perms.set(gid, perms),
+}

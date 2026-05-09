@@ -1,4 +1,4 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, MessageFlags } from "discord.js";
 import { CommandList } from "../util.mjs";
 import dotenv from 'dotenv';
 dotenv.config();
@@ -37,7 +37,7 @@ export default async function help(interaction) {
     await interaction.editReply({ 
         embeds: [CommandEmbedListForUser.getEmbed()],
         components: [CommandEmbedListForUser.getCtrlBtns()],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
         fetchReply: true
     });
 

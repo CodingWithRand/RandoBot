@@ -1,4 +1,4 @@
-# ~~RandoBot~~ Daisey - v.2.1.0-1
+# ~~RandoBot~~ Daisey - v.2.1.0-2
 ## About me
 *"Hi, I'm Daisey. My name actually comes from my owner branding. How? Well, Rand0M = Random -> Dice 🎲 -> Dicey -> Daisey 😅"<br>
 "My dream is... to become useful in every aspect to you all! I would like to enhance the experience of discord user and making things convenient for you guys. In short, I aim to be a generalist! Jack of all trades! But now, I can still only do a few things, with errors here and there 🥲" <br> 
@@ -70,7 +70,7 @@ __Parameters__
     - `Souncloud`: Use SoundCloud extractor.
 3. `name` (for `save` and `delpl`): used to identify a playlist for the newly created one for `save` and the one to delete for `delpl`
 
-__Note:__ The term `track number` means the position of order of the track in the current queue. You can view the track number when you use `/queue`.
+__Note:__ The term `track number` means the position of order of the track in the current queue. You can view the track number when you use `/queue`, with __#0__ being the current playing track (You cannot do anything to the current playing track except `/lookup` and `/playfirst`)
     
 
 ### Admin Special Commands
@@ -84,6 +84,7 @@ __Subcommands__
 5. `grant`: Add a specific `user` or `role` to the admin list, so that they can use admin commands.
 6. `revoke`: Remove a specific `user` or `role` from the admin list, so that they can no longer use admin commands.
 7. `whois`: Show the list of users and roles that have been granted admin permission.
+8. `gate`: Create a gatekeeper. This will be useful when you inquire users info to give them access to your server through roles. The creation process will be done through discord modals.
 
 __Parameters__
 1. `commands`: Command name(s) or id(s) to delete, separated by space.
@@ -145,6 +146,9 @@ __Current Version: 2.1.0-1__
 __Part 1__
 - Adding the following new commands to `ListenWDaisy`, `/skipto`, `/swap`, `/reorder`, `/lookup`, `/forward`, `/backtrack`, `/playnext`, `/playfirst`
 - 100% documentation (Finally lol.)
+__Part 2__
+- Refactor code to be a bit more modular.
+- Adding subcommand `gate` to `/admin`
 
 
 ## TODO: (Upcoming updates)

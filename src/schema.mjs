@@ -52,3 +52,24 @@ export const MusicPlaylists = mongoose.model(
         }
     })
 )
+
+export const Gates = mongoose.model(
+    'gates',
+    new mongoose.Schema({
+        id: { type: String, required: true },
+        questions: [
+            new mongoose.Schema({
+                q: { type: String, required: true },
+                q_type: { type: String, required: true },
+                answer_constraint_operator: { type: String, required: true },
+                answer_constraint: { type: String, required: true }
+            })
+        ],
+        greeting_msg: { type: String, required: false },
+        access_role: { type: String, required: true },
+        announcement_channel: { type: String, required: true },
+        collect_data: { type: Boolean, required: true },
+        data_constraint: { type: String, required: false, default: "None" },
+        gate_data: []
+    })
+)

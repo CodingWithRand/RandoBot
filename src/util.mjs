@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ComponentType, ActionRowBuilder, ButtonStyle, ButtonBuilder } from "discord.js";
+import { ApplicationCommandOptionType, ComponentType, ActionRowBuilder, ButtonStyle, ButtonBuilder, MessageFlags } from "discord.js";
 
 export function getOptionChoices(choices) {
     let choice_list = [];
@@ -233,7 +233,7 @@ export class CommandList {
                 if(this.currentPage < this.lastPage) this.controlBtns.components[1].setDisabled(false);
                 else this.controlBtns.components[1].setDisabled(true);
             }
-            await interaction.editReply({ embeds: [this.embed], components: [this.controlBtns], ephemeral: true });
+            await interaction.editReply({ embeds: [this.embed], components: [this.controlBtns], flags: MessageFlags.Ephemeral });
             fucrBtnInteraction.deferUpdate({ timeout: 15 * 60000 });
         })
     }
